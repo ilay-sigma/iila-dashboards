@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>השלמות מחודש קודם · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>השלמות מחודש קודם</h1>
+  <select id="month" title="חודש"></select>
+  <span class="sub" id="asof"></span>
+</header>
+
+<div class="wrap">
+  <div class="info todo hidden" id="baseWarn"></div>
+  <div id="emptyNote"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h2>השלמות לפי מחלקות ואנשים <span class="note" id="sumNote"></span>
+      <label class="search-field" style="margin-inline-start:auto"><svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input type="search" id="search" placeholder="שם, לקוחה, תוכנית…" autocomplete="off" /></label>
+    </h2>
+    <div class="info">השלמה = תשלום שנכנס על <b>הצעות של החודש הקודם בלבד</b>. הטבלה משווה בין המצב היום לבין המצב בתחילת החודש (צילום הבסיס) — מה נוסף מאז. ברשימה מופיע מי שמכר בחודש הקודם. החץ פותח את הלקוחות שמרכיבים את הסכום. <span data-write>כל עסקה אפשר לא להחשיב בנפרד (כפתור "לא לספור" בפירוט), והעיפרון מוסיף סכום ידני.</span></div>
+    <div class="err hidden" id="gridErr"></div>
+    <div class="scroll"><table id="grid"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>השלמות לפי מחלקה</h2>
+    <div class="chartwrap" id="deptChart"></div>
+  </div>
+  <div class="foot" id="foot"></div>
+  <div class="compose hidden" id="snapWrap" data-write><button class="btn ghost sm" id="snapBtn" type="button">📸 צילום בסיס לחודש הנוכחי (חסר)</button></div>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script>
+const rest = UI.rest, esc = UI.esc, money = UI.money, int = UI.int, q = UI.q, heb = UI.heb;
+let MONTH = null, MONTHS = [], META = null, PERSONS = [], ROWS = [], MANUAL = [], PREV = null;
+const OPEN = new Set();            // staff_key של שורות פתוחות — נשמר בין רענונים
+const signed = v => { const n = Number(v||0); if(!n) return '<span class="dash">0</span>'; return `<span class="${n>0?'pos':'neg'}">${money(n)}</span>`; };
+const ORDER = ['front','mtl','mtl_active','cosmetics'];
+const rank = d => { const i = ORDER.indexOf(d); return i >= 0 ? i : ORDER.length; };
+const who = e => (e||'').split('@')[0];
+// ניסוח ההערות בלי ספים ומספרים
+const FLAG = f => ({ 'חצה את סף 95% בלי תשלום חדש': 'נספר עכשיו בלי תשלום חדש (התוכנית שונתה)' })[f] || f || '';
+
+// ------------------------------------------------------------------ טעינה
+async function load(){
+  const err = document.getElementById('gridErr'); err.classList.add('hidden');
+  try{
+    const [persons, months, prev, rows, manual] = await Promise.all([
+      rest(`completion_persons?period_month=eq.${MONTH}`),
+      rest('completion_months'),
+      rest(`completion_persons?period_month=eq.${UI.prevMonth(MONTH)}&select=total,auto_total,manual_total,n_excluded,person_included`).catch(()=>[]),
+      rest(`completion_rows?period_month=eq.${MONTH}&order=creation_date&limit=5000`).catch(()=>[]),
+      rest(`completion_manual_rows?period_month=eq.${MONTH}&order=seq`).catch(()=>[]),
+    ]);
+    PERSONS = persons; META = months.find(m=>m.period_month===MONTH) || null; PREV = prev; ROWS = rows; MANUAL = manual;
+  }catch(e){ err.classList.remove('hidden'); err.textContent = 'טעינה נכשלה: ' + e.message; return; }
+  render();
+}
+
+// ------------------------------------------------------------------ ציור
+function render(){
+  const persons = [...PERSONS].sort((a,b) => (rank(a.department)-rank(b.department)) || ((a.dept_sort||99)-(b.dept_sort||99)) || (Number(b.total)-Number(a.total)) || (Number(b.prev_sales)-Number(a.prev_sales)));
+  const hasBase = !!(META && META.has_base);
+  const baseDay = hasBase ? new Date(META.base_taken_at).getUTCDate() : null;
+  const lateBase = hasBase && baseDay > 2;
+
+  const warn = document.getElementById('baseWarn');
+  warn.classList.toggle('hidden', hasBase && !lateBase);
+  warn.innerHTML = !hasBase
+    ? `⚠ לחודש ${heb(MONTH)} אין צילום בסיס — אין מול מה להשוות. ${UI.canWrite()?'סופר אדמין יכול לצלם עכשיו בכפתור שבתחתית הדף.':''}`
+    : `⚠ צילום הבסיס של ${heb(MONTH)} נלקח ב-${UI.time(META.base_taken_at)} ולא ב-1 בחודש, ולכן נספרים רק תשלומים וביטולים שנכנסו מאז. מהחודש הבא הצילום נלקח אוטומטית ב-1 בחודש.`;
+  document.getElementById('snapWrap').classList.toggle('hidden', hasBase);
+  document.getElementById('sumNote').textContent = hasBase ? `בסיס: ${UI.time(META.base_taken_at)} · על תוכניות של ${heb(UI.prevMonth(MONTH))}` : '';
+  document.getElementById('asof').textContent = `נכון ל־${new Date().toLocaleDateString('he-IL')}`;
+
+  const S = (arr, k) => arr.reduce((s,p)=>s+Number(p[k]||0), 0);
+  const tot = S(persons,'total'), auto = S(persons.filter(p=>p.person_included),'auto_total'), man = S(persons.filter(p=>p.person_included),'manual_total');
+  const nExRows = S(persons,'n_excluded'), nExPeople = persons.filter(p=>!p.person_included).length;
+  const pSum = k => (PREV && PREV.length) ? S(PREV, k) : null;
+
+  document.getElementById('emptyNote').innerHTML = (persons.length && tot) ? '' :
+    `<div class="empty"><span class="big">📭</span>אין עדיין השלמות ב${esc(heb(MONTH))}` +
+    (!hasBase ? ' — אין צילום בסיס לחודש הזה.' : ` — מאז צילום הבסיס (${UI.time(META.base_taken_at)}) לא נכנס תשלום על תוכנית של ${esc(heb(UI.prevMonth(MONTH)))}.`) + `</div>`;
+
+  document.getElementById('tiles').innerHTML = [
+    ['סה״כ השלמות', money(tot), `${persons.filter(p=>Number(p.total)).length} אנשים עם השלמה`, 'completion_total', tot, pSum('total'), money],
+    ['אוטומטי מרפיד', money(auto), 'ההפרש מול צילום הבסיס', 'completion_delta', auto, pSum('auto_total'), money],
+    ['ידני', money(man), `${S(persons,'n_manual')} שורות ידניות`, null, man, pSum('manual_total'), money],
+    ['לא נספרים', int(nExPeople + nExRows), `${nExPeople} אנשים · ${nExRows} לקוחות`, null, nExPeople + nExRows, pSum('n_excluded'), int],
+  ].map(([k,v,m,qk,cur,prev,f])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v">${v}</div><div class="m">${m}</div>${UI.prevLine(cur, prev, f)}</div>`).join('');
+
+  drawGrid(persons);
+
+  const depts = [...new Map(persons.map(p=>[p.department, p.dept_title||p.group_name])).entries()];
+  UI.chart.bars('#deptChart', { items: depts.map(([k,t])=>({label:t, value: persons.filter(p=>p.department===k).reduce((s,p)=>s+Number(p.total||0),0), cls:'c4'})), fmt: money, yfmt: v=>UI.k(v,{plain:true}), height: 200 });
+  document.getElementById('foot').innerHTML = `הבסיס = צילום של כל התוכניות בתחילת החודש (אוטומטי) ${q('completion_base')}. ההשלמות של ${esc(heb(MONTH))} הן על תוכניות של ${esc(heb(UI.prevMonth(MONTH)))} ומוקדם יותר.`;
+}
+
+function drawGrid(persons){
+  const el = document.getElementById('grid'), qq = document.getElementById('search').value.trim().toLowerCase();
+  const canW = UI.canWrite();
+  // השוואה סלחנית לרווחים — staff_key מגיע משתי תצוגות שונות
+  const norm = v => String(v||'').trim();
+  const rowsOf = k => ROWS.filter(r => norm(r.staff_key) === norm(k));
+  const manOf  = k => MANUAL.filter(r => norm(r.staff_key) === norm(k));
+  const match = p => !qq || [p.display_name, p.group_name, p.dept_title, ...rowsOf(p.staff_key).flatMap(r=>[r.patient_name, r.plan_name])].join(' ').toLowerCase().includes(qq);
+  const list = persons.filter(match);
+
+  el.querySelector('thead').innerHTML = `<tr><th style="width:36px"></th><th>שם</th><th>סה״כ ${q('completion_total')}</th><th>אוטומטי ${q('completion_delta')}</th><th>ידני</th><th>לקוחות</th><th>מכירות ${esc(heb(UI.prevMonth(MONTH)))}</th>${canW?'<th style="width:44px"></th>':''}</tr>`;
+  let dept = null, html = '';
+  for(const p of list){
+    if(p.department !== dept){
+      dept = p.department; const dp = list.filter(x=>x.department===dept);
+      html += `<tr class="group dept"><td></td><td>${esc(p.dept_title||p.group_name)}</td><td class="num"><b>${money(dp.reduce((s,x)=>s+Number(x.total||0),0))}</b></td><td class="num">${money(dp.filter(x=>x.person_included).reduce((s,x)=>s+Number(x.auto_total||0),0))}</td><td class="num">${money(dp.filter(x=>x.person_included).reduce((s,x)=>s+Number(x.manual_total||0),0))}</td><td class="num">${int(dp.reduce((s,x)=>s+Number(x.n_rows||0),0))}</td><td class="num">${money(dp.reduce((s,x)=>s+Number(x.prev_sales||0),0))}</td>${canW?'<td></td>':''}</tr>`;
+    }
+    const open = OPEN.has(p.staff_key), ex = !p.person_included, k = esc(p.staff_key);
+    html += `<tr class="${p.display_name===UI.label()?'me':''} ${ex?'muted excluded':''} ${!ex && Number(p.total)>0.1?'rowband':''}" data-key="${k}">` +
+      `<td><button class="expander ${open?'open':''}" type="button" data-toggle="${k}" title="פתיחת הלקוחות שמרכיבים את הסכום" aria-expanded="${open}">▾</button></td>` +
+      `<td><span class="pname">${esc(p.display_name)}</span> <span class="sub">${esc(p.group_name)}</span>${ex?` <span class="chip bad">לא נספר</span>${p.person_note?` <span class="decided">${esc(p.person_note)}</span>`:''}`:''}</td>` +
+      `<td class="num"><b>${ex ? `<s class="dash">${money(Number(p.auto_total||0)+Number(p.manual_total||0))}</s> 0` : signed(p.total)}</b></td>` +
+      `<td class="num">${signed(p.auto_total)}</td><td class="num">${signed(p.manual_total)}</td>` +
+      `<td class="num">${Number(p.n_rows)?int(p.n_rows):'<span class="dash">—</span>'}${Number(p.n_excluded)?` <span class="sub warn">(${int(p.n_excluded)} לא נספרים)</span>`:''}</td>` +
+      `<td class="num dash">${Number(p.prev_sales)?money(p.prev_sales):'—'}</td>` +
+      (canW ? `<td class="menucell"><button class="pencil" type="button" data-menu="${k}" title="אפשרויות">✎</button>` +
+        `<div class="rowmenu hidden" data-menu-for="${k}">` +
+          `<button type="button" data-act="open" data-key="${k}">▾ פתיחת העסקאות של ${esc(p.display_name)}</button>` +
+          `<button type="button" data-act="manual" data-key="${k}">＋ הוספת סכום ידני</button>` +
+          (ex ? `<button type="button" data-act="include" data-key="${k}">↩ להחזיר את ${esc(p.display_name)} לחישוב</button>` : '') +
+          `<div class="menunote">החרגה נעשית לכל עסקה בנפרד — בפירוט הלקוחות שנפתח מתחת לשורה</div>` +
+        `</div></td>` : '') +
+      `</tr>`;
+    if(open) html += `<tr class="exp" data-exp="${k}"><td colspan="${canW?8:7}">${expansion(p, rowsOf(p.staff_key), manOf(p.staff_key), canW)}</td></tr>`;
+  }
+  const tot = list.reduce((s,p)=>s+Number(p.total||0),0);
+  html += `<tr class="total"><td></td><td>סה״כ</td><td class="num">${signed(tot)}</td><td class="num">${signed(list.filter(p=>p.person_included).reduce((s,p)=>s+Number(p.auto_total||0),0))}</td><td class="num">${signed(list.filter(p=>p.person_included).reduce((s,p)=>s+Number(p.manual_total||0),0))}</td><td class="num">${int(list.reduce((s,p)=>s+Number(p.n_rows||0),0))}</td><td class="num">${money(list.reduce((s,p)=>s+Number(p.prev_sales||0),0))}</td>${canW?'<td></td>':''}</tr>`;
+  el.querySelector('tbody').innerHTML = html || `<tr><td colspan="8" class="dash">${qq?'אין תוצאות לחיפוש':'אין אנשים לחודש הזה'}</td></tr>`;
+  wire(el);
+}
+
+// הפירוט מתחת לשורה: הלקוחות שמרכיבים את הסכום, שורות ידניות, והוספה ידנית
+function expansion(p, rows, man, canW){
+  const rowsHtml = rows.length ? `<table class="mini inner"><thead><tr><th>תאריך</th><th>לקוחה</th><th>תוכנית</th><th>הפרש ${q('completion_delta')}</th><th>הערה</th><th>בחישוב</th></tr></thead><tbody>` +
+    rows.map(r=>`<tr class="${r.included?'':'muted'}"><td>${UI.dm(r.creation_date)}</td><td>${esc(r.patient_name||'')}</td><td>${esc(r.plan_name||'')} <span class="sub">${esc(r.plan_type||'')}</span></td><td class="num"><b>${signed(r.delta)}</b></td><td class="sub" style="white-space:normal">${esc(FLAG(r.flags))}</td>` +
+      `<td>${r.included
+        ? (canW ? `<button class="btn ghost xs" data-row="0" data-plan="${esc(r.plan_key)}">לא לספור</button>` : '<span class="pos">✓</span>')
+        : `<span class="chip bad">לא נספר</span> ${canW?`<button class="btn ghost xs" data-row="1" data-plan="${esc(r.plan_key)}">החזרה</button>`:''}${r.decided_by?`<div class="decided">${esc(who(r.decided_by))} · ${UI.time(r.decided_at)}${r.note?'<br>'+esc(r.note):''}</div>`:''}`}</td></tr>`).join('') +
+    `</tbody></table>` : `<div class="empty small">אין תשלומים או ביטולים על התוכניות של ${esc(p.display_name)} מאז צילום הבסיס</div>`;
+  const manHtml = man.length ? `<div class="subhead">סכומים ידניים</div><table class="mini inner"><thead><tr><th>לקוחה</th><th>הערה</th><th>סכום</th><th>מי / מתי</th><th></th></tr></thead><tbody>` +
+    man.map(r=>`<tr><td>${r.client_name?`<b>${esc(r.client_name)}</b>`:'<span class="dash">—</span>'}</td><td style="white-space:normal">${esc(r.note||'')}</td><td class="num"><b>${signed(r.amount)}</b></td><td class="dash">${esc(who(r.updated_by))} · ${UI.time(r.updated_at)}</td><td>${canW?`<button class="btn ghost xs" data-del="${r.manual_id}">מחיקה</button>`:''}</td></tr>`).join('') + `</tbody></table>` : '';
+  const form = canW ? `<form class="add-form manform" data-form="${esc(p.staff_key)}" data-group="${esc(p.group_name)}">` +
+    `<input type="text" name="client" placeholder="שם הלקוחה (לא חובה)" style="min-width:170px" />` +
+    `<input type="number" name="amount" placeholder="סכום ₪ (יכול להיות שלילי)" step="any" required style="width:190px" />` +
+    `<input type="text" name="note" placeholder="הערה — מה ולמה" required style="min-width:220px" />` +
+    `<button class="btn xs" type="submit">הוספה ל${esc(p.display_name)}</button></form>` : '';
+  return `<div class="expbody">${rowsHtml}${manHtml}${form}</div>`;
+}
+
+// ------------------------------------------------------------------ אירועים
+// התפריט יושב בתוך טבלה עם גלילה, ולכן הוא ממוקם position:fixed ליד הכפתור —
+// אחרת ה-overflow של הטבלה חותך אותו והלחיצה "לא עושה כלום".
+let OPEN_MENU = null;
+function closeMenus(){ if(OPEN_MENU){ OPEN_MENU.remove(); OPEN_MENU = null; } }
+// התפריט מועבר ל-body ומוצג כשכבה צפה: בתוך הטבלה (שיש בה גלילה) הוא נחתך
+// ונראה כאילו "קופץ" למקום אחר.
+function openMenuAt(menu, btn){
+  closeMenus();
+  const m = menu.cloneNode(true);
+  m.classList.remove('hidden'); m.classList.add('floating');
+  document.body.appendChild(m); OPEN_MENU = m;
+  const r = btn.getBoundingClientRect(), h = m.offsetHeight, w = m.offsetWidth;
+  const top = (r.bottom + 6 + h > window.innerHeight - 8) ? Math.max(8, r.top - 6 - h) : r.bottom + 6;
+  m.style.top = top + 'px';
+  m.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+  return m;
+}
+document.addEventListener('click', e => { if(!e.target.closest('.menucell')) closeMenus(); });
+window.addEventListener('scroll', closeMenus, true);
+window.addEventListener('resize', closeMenus);
+
+function wire(el){
+  el.querySelectorAll('button[data-toggle]').forEach(b=>b.onclick=()=>{ const k=b.dataset.toggle; OPEN.has(k)?OPEN.delete(k):OPEN.add(k); render(); });
+  el.querySelectorAll('button[data-menu]').forEach(b=>b.onclick=e=>{ e.stopPropagation();
+    const m=el.querySelector(`.rowmenu[data-menu-for="${CSS.escape(b.dataset.menu)}"]`);
+    const wasOpen = !!OPEN_MENU; closeMenus();
+    if(!wasOpen){ const f = openMenuAt(m, b);
+      f.querySelectorAll('button[data-act]').forEach(x=>x.onclick=()=>menuAction(x.dataset.act, x.dataset.key)); } });
+  const menuAction = async (act, k) => {
+    closeMenus();
+    if(act==='open'){ OPEN.add(k); render(); return; }
+    if(act==='manual'){ OPEN.add(k); render();
+      const f=document.querySelector(`form[data-form="${CSS.escape(k)}"] input[name=client]`); if(f) f.focus(); return; }
+    if(act==='include'){
+      try{ await UI.rpc('set_completion_person',{p_month:MONTH, p_staff_key:k, p_include:true, p_note:null}); UI.toast('הוחזר לחישוב','good'); await load(); }
+      catch(err){ UI.toast(err.message,'bad'); }
+    }
+  };
+  el.querySelectorAll('.rowmenu button[data-act]').forEach(b=>b.onclick=()=>menuAction(b.dataset.act, b.dataset.key));
+  el.querySelectorAll('button[data-row]').forEach(b=>b.onclick=async()=>{
+    const inc = b.dataset.row==='1'; const note = inc ? null : prompt('סיבה (לא חובה):',''); if(!inc && note===null) return;
+    try{ await UI.rpc('set_completion_row',{p_month:MONTH, p_plan_key:b.dataset.plan, p_include:inc, p_note:note||null}); UI.toast(inc?'הוחזר לחישוב':'לא נספר','good'); await load(); }
+    catch(err){ UI.toast(err.message,'bad'); }
+  });
+  el.querySelectorAll('button[data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('למחוק את הסכום הידני?')) return;
+    try{ await UI.rpc('delete_completion_manual',{p_manual_id:Number(b.dataset.del)}); await load(); }catch(err){ UI.toast(err.message,'bad'); }
+  });
+  el.querySelectorAll('form.manform').forEach(f=>f.onsubmit=async e=>{
+    e.preventDefault();
+    const amount = Number(f.amount.value), note = f.note.value.trim(), client = f.client.value.trim();
+    if(!amount || !note){ UI.toast('צריך סכום והערה','bad'); return; }
+    try{ await UI.rpc('add_completion_manual',{p_month:MONTH, p_group:f.dataset.group, p_staff_key:f.dataset.form, p_amount:amount, p_note:note, p_client:client||null}); UI.toast('נוסף ✓','good'); await load(); }
+    catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); }
+  });
+}
+document.getElementById('search').addEventListener('input', UI.debounce(()=>PERSONS&&render(), 120));
+document.getElementById('snapBtn').onclick = async()=>{ try{ const r = await UI.rpc('admin_take_completions_snapshot',{p_month:MONTH, p_force:false}); UI.toast(`צולם ✓ (${r})`,'good'); await load(); }catch(err){ UI.toast(err.message,'bad'); } };
+
+document.addEventListener('access-ready', () => { UI.applyVisibility(); if(PERSONS.length) render(); });
+(async function init(){
+  try{
+    const months = await rest('completion_months?order=period_month.desc'); MONTHS = months.map(m=>m.period_month);
+    const sel = document.getElementById('month');
+    // תמיד מתחילים מהחודש הנוכחי: ההשלמות שלו הן על תוכניות של החודש שעבר
+    const cur = UI.thisMonth ? UI.thisMonth() : new Date().toISOString().slice(0,7)+'-01';
+    sel.innerHTML = MONTHS.map(m=>`<option value="${m}">${heb(m)} · תוכניות של ${heb(UI.prevMonth(m))}</option>`).join('');
+    MONTH = MONTHS.includes(cur) ? cur : MONTHS[0]; sel.value = MONTH;
+    if(!MONTH){ document.getElementById('tiles').innerHTML = '<div class="empty"><span class="big">📭</span>אין עדיין חודשים עם נתוני השלמות. הצילום הראשון נלקח אוטומטית ב-1 בחודש.</div>'; return; }
+    sel.onchange = async()=>{ MONTH=sel.value; OPEN.clear(); await load(); };
+    if(location.hash.length>1){ OPEN.add(decodeURIComponent(location.hash.slice(1))); }
+    await load();
+  }catch(err){ document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<div class="card"><div class="err">טעינה נכשלה: ${esc(err.message)}</div></div>`); }
+})();
+</script>
+</body>
+</html>

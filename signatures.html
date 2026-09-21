@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>חוסרי חתימה · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>חוסרי חתימה</h1>
+  <select id="month" title="חודש"></select>
+  <label class="search-field" title="חיפוש">
+    <svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <input type="search" id="search" placeholder="שם, יועצת, תאריך…" autocomplete="off" enterkeyhint="search" />
+  </label>
+  <label class="toggle" title="להציג רק שורות שיש בהן חוסר"><input type="checkbox" id="onlyMissing" /> רק עם חוסר</label>
+  <span class="sub" id="asof"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="month"       aria-selected="true">החודש</button>
+    <button data-tab="consultants" aria-selected="false">חוסרים לפי יועצות</button>
+    <button data-tab="mismatch"    aria-selected="false" data-level="manager">רפיד מול ידני</button>
+    <button data-tab="annual"      aria-selected="false" data-level="manager">השוואה שנתית</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <!-- ================= החודש ================= -->
+  <section id="tab-month">
+    <div class="tiles" id="tiles"></div>
+    <div class="splitbar" id="closeSplit"></div>
+    <div class="card" id="calCard">
+      <h2>קפיצה לתאריך <span class="note">לחיצה על יום גוללת אליו בשתי הטבלאות · המספר האדום = שורות עם חוסר</span></h2>
+      <div class="daycal" id="daycal"></div>
+    </div>
+    <div class="legend">
+      <span><span class="pos">V</span> תקין</span><span><span class="neg">✗</span> חסר — נספר</span><span><span class="chip good">✓ ויתור</span> סופר אדמין אישר שלא לספור</span><span><span class="chip warn">⚠ קצר</span> תיעוד עד 25 תווים</span><span>💬 הערות / בקשות על השורה</span>
+      <span class="spacer"></span><span id="legendWrite" data-write>סופר אדמין: לחיצה על תא חסר פותחת אישור/הערה</span>
+    </div>
+    <div class="card">
+      <h2>עסקאות שנסגרו <span class="note">ייעוצים שנסגרו</span>
+        <span style="margin-inline-start:auto"></span><label class="toggle onlyMissLbl" title="להציג רק שורות שיש בהן חוסר"><input type="checkbox" class="onlyMissCb" /> לחץ להצגת חוסרים בלבד</label>
+        <label class="sub" style=" display:flex; align-items:center; gap:6px; font-weight:400; cursor:pointer;" title="עסקה שסוג התוכנית שלה ברפיד הוא 'תוכניות המשך' — לקוחה קיימת, בדרך כלל בלי פגישת ייעוץ. הסינון ויזואלי בלבד."><input type="checkbox" id="incFollowups" checked /> כולל תוכניות המשך</label>
+      </h2>
+      <div class="err hidden" id="dealErr"></div>
+      <div class="scroll freeze"><table id="dealGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>פגישות שלא נסגרו <span class="note">ייעוצים שהגיעו ולא נסגרו</span><span style="margin-inline-start:auto"></span><label class="toggle onlyMissLbl" title="להציג רק שורות שיש בהן חוסר"><input type="checkbox" class="onlyMissCb" /> לחץ להצגת חוסרים בלבד</label></h2>
+      <div class="scroll freeze"><table id="apptGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <!-- ================= חוסרים לפי יועצות ================= -->
+  <section id="tab-consultants" class="hidden">
+    <div class="card">
+      <h2>חוסרים לפי יועצות <span class="note">לחיצה על יועצת פותחת את השורות עם החוסרים שלה ואת ההערות</span></h2>
+      <div class="info">כל יועצת רואה את השורות שלה ויכולה לכתוב הערה או בקשה על חוסר (למשל "הטופס נחתם ידנית ונמצא בתיק"). סופר אדמין מאשר, דוחה או משיב — ההחלטה נרשמת עם שם ותאריך, וסופר אדמין אחר יכול לשנות אותה.</div>
+      <div class="scroll"><table id="consGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>בקשות פתוחות <span class="note" id="reqNote"></span></h2>
+      <div id="openReqs"></div>
+    </div>
+  </section>
+
+  <!-- ================= רפיד מול ידני ================= -->
+  <section id="tab-mismatch" class="hidden">
+    <div class="card">
+      <h2>אי-התאמה בין ההזנה הידנית לרפיד</h2>
+      <div class="info">שורות שבהן הוזן <b>V</b> ידנית אבל רפיד לא מאשר: הטופס לא הושלם, לא נמצא תיעוד תואם, או שהתיעוד רשום על שם יועצת אחרת מזו שביומן. זה בדיוק מה שדוח בקרה אמור למצוא.</div>
+      <div class="scroll freeze"><table id="misGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= השוואה שנתית ================= -->
+  <section id="tab-annual" class="hidden">
+    <div class="tiles" id="annTiles"></div>
+    <div class="card">
+      <h2>מדדים לפי חודש <span class="note">כל החודשים · החודש הנבחר מסומן</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>מגמה חודשית <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="annMetric"></select><select id="annKind"><option value="bars">עמודות</option><option value="lines">נקודות מחוברות</option></select></label></h2>
+      <div class="chartwrap" id="annChart"></div>
+    </div>
+    <div class="foot" id="annFoot"></div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script src="js/signatures-config.js?v=20260918y"></script>
+<script>
+const C = window.SIGNATURES_CONFIG;
+const rest = UI.rest, esc = UI.esc, int = UI.int, money = UI.money, pct = UI.pct, q = UI.q, heb = UI.heb, dm = UI.dm;
+let MONTH = null, ROWS = [], SEL_DAY = null, ANN_CACHE = null;
+let PREV_M = null;   // אגרגט החודש הקודם, ל"חודש שעבר" באריחים
+const FIELDS = { health_declaration:'הצהרת בריאות', consent_form:'טופס הסכמה', documentation:'תיעוד', tablet_documentation:'תיעוד טאבלט', email_agreement:'הסכם במייל', pricelist_offer:'הצעת מחיר' };
+const isOk = v => { const s=String(v??'').trim(); return s==='V' || s.startsWith('✅'); };
+const tabs = UI.tabs('#tabs', t => { if(t==='consultants') renderConsultants(); if(t==='mismatch') renderMismatch(); if(t==='annual') renderAnnual(); });
+
+function clientLink(r){
+  const name = esc(r.client_name);
+  if(!r.rapid_card_code) return name;
+  return `<a href="${C.RAPID_BASE_URL}${C.RAPID_CARD_PATH}${encodeURIComponent(r.rapid_card_code)}" target="_blank" rel="noopener noreferrer" title="פתיחת כרטיס הלקוחה ברפיד">${name}</a>`;
+}
+// תא של שדה חתימה: תקין / חסר / ויתור / תיעוד קצר — ולסופר אדמין, לחיצה לאישור.
+function flagCell(r, field){
+  const raw = String(r[field] ?? '').trim();
+  const w = (r.waivers||{})[field];
+  const short = field==='documentation' && r.short_doc;
+  let inner;
+  if(w) inner = `<span class="chip good" title="ויתור: ${esc(w.by_name||w.by||'')} · ${UI.time(w.at)}${w.note?' · '+esc(w.note):''}">✓ ויתור</span>`;
+  else if(!raw) inner = '<span class="dash">—</span>';
+  else { const m = raw.match(/^([✅❌])\s*\((.*)\)\s*$/); inner = m ? `<span class="${isOk(raw)?'pos':'neg'}" title="${esc(raw)}">${m[1]}</span>` : `<span class="${isOk(raw)?'pos':'neg'}">${esc(raw)}</span>`; }
+  if(short) inner += ` <span class="chip warn" title="אורך התיעוד ברפיד: ${r.documentation_len_rapid} תווים">⚠ קצר (${r.documentation_len_rapid})</span>`;
+  const missing = !w && !isOk(raw);
+  const clickable = UI.canWrite() && (missing || w);
+  return `<td class="${missing?'miss':''} ${clickable?'clickable':''}" ${clickable?`data-sig="${r.sig_id}" data-field="${field}"`:''} title="${clickable?'לחיצה: אישור ויתור / הערה':''}">${inner}</td>`;
+}
+const DEAL_COLS = [['record_date','תאריך'],['client_name','שם'],['health_declaration','הצהרת בריאות'],['consent_form','טופס הסכמה'],['documentation','תיעוד'],['tablet_documentation','תיעוד טאבלט'],['email_agreement','הסכם במייל'],['consultant_raw','שם היועצת'],['amount','סכום'],['notes','הערות'],['_thread','💬']];
+const APPT_COLS = [['record_date','תאריך'],['client_name','שם'],['pricelist_offer','הצעת מחיר'],['documentation','תיעוד'],['tablet_documentation','תיעוד טאבלט'],['consultant_raw','שם היועצת'],['coordinator_raw','מתאמת פגישות'],['notes','הערות'],['_thread','💬']];
+
+function searchQ(){ return document.getElementById('search').value.trim().toLowerCase(); }
+function applyFilters(rows){
+  const qq = searchQ(), om = document.getElementById('onlyMissing').checked;
+  return rows.filter(r => (!om || Number(r.missing_count)>0 || r.open_requests>0) &&
+    (!qq || [r.client_name, r.consultant_raw, r.coordinator_raw, r.notes, dm(r.record_date), r.record_date].join(' ').toLowerCase().includes(qq)));
+}
+function drawTable(el, cols, rows, empty){
+  el.querySelector('thead').innerHTML = `<tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr>`;
+  el.querySelector('tbody').innerHTML = rows.map(r=>`<tr data-date="${r.record_date||''}" class="${r.record_date===SEL_DAY?'dayhit':''} ${r.consultant_raw===UI.label()?'me':''}">${cols.map(([k])=>{
+    if(FIELDS[k]) return flagCell(r,k);
+    if(k==='record_date') return `<td>${dm(r.record_date)}</td>`;
+    if(k==='client_name') return `<td>${clientLink(r)}${r.plan_type_rapid==='תוכניות המשך'?' <span class="chip">המשך</span>':''}</td>`;
+    if(k==='amount') return `<td class="num">${money(r.amount)}</td>`;
+    if(k==='_thread') return `<td><button class="iconbtn ${r.open_requests?'warn':''}" data-thread="${r.sig_id}" title="הערות ובקשות על השורה">💬${r.notes_count?`<b>${r.notes_count}</b>`:''}${r.open_requests?' ⏳':''}</button></td>`;
+    return `<td>${esc(r[k]||'')}</td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="dash">${empty||'אין שורות'}</td></tr>`;
+}
+function renderMonthTables(){
+  const rows = applyFilters(ROWS);
+  let deals = rows.filter(r=>r.block_type==='deal');
+  if(!document.getElementById('incFollowups').checked) deals = deals.filter(r=>r.plan_type_rapid!=='תוכניות המשך');
+  drawTable(document.getElementById('dealGrid'), DEAL_COLS, deals, searchQ()?'אין תוצאות לחיפוש':'אין שורות');
+  drawTable(document.getElementById('apptGrid'), APPT_COLS, rows.filter(r=>r.block_type==='appointment'), searchQ()?'אין תוצאות לחיפוש':'אין שורות');
+}
+function renderTiles(){
+  const deals = ROWS.filter(r=>r.block_type==='deal'), appts = ROWS.filter(r=>r.block_type==='appointment');
+  const tot = deals.length + appts.length;
+  const cnt = (rs, f, deal) => rs.filter(r => (!deal || r.block_type==='deal') && !isOk(r[f]) && !(r.waivers||{})[f]).length;
+  const miss = f => cnt(ROWS, f, ['health_declaration','consent_form','email_agreement'].includes(f));
+  const tiles = [
+    ['ייעוצים', int(tot), `${new Set(ROWS.map(r=>r.record_date)).size} ימי פעילות`, 'close_rate_sig'],
+    ['נסגרו', int(deals.length), tot?`${pct(deals.length/tot)} · ${deals.filter(r=>r.missing_count>0).length} עם חוסר`:'', 'closings'],
+    ['לא נסגרו', int(appts.length), tot?`${pct(appts.length/tot)} · ${appts.filter(r=>r.missing_count>0).length} עם חוסר`:'', null],
+    ['חוסרי תיעוד', int(miss('documentation')), `טאבלט ${int(miss('tablet_documentation'))} · תיעוד קצר ${int(ROWS.filter(r=>r.short_doc).length)}`, 'missing_count'],
+    ['חוסרי הצהרת בריאות', int(miss('health_declaration')), `הסכמה ${int(miss('consent_form'))} · מייל ${int(miss('email_agreement'))}`, null],
+    ['ויתורים מאושרים', int(ROWS.filter(r=>r.waivers && Object.keys(r.waivers).length).length), `בקשות פתוחות ${int(ROWS.reduce((s,r)=>s+Number(r.open_requests||0),0))}`, 'waiver'],
+  ];
+  // הערך המקביל בחודש הקודם, לפי סדר האריחים למעלה
+  const P = PREV_M, prevVals = [
+    P ? Number(P.deals||0)+Number(P.appointments||0) : null, P && P.deals, P && P.appointments,
+    P && P.deals_amount, P && P.miss_doc, P && P.miss_health, P && P.waived_rows,
+  ];
+  const prevFmt = [int, int, int, money, int, int, int];
+  document.getElementById('tiles').innerHTML = tiles.map(([k,v,m,qk],i)=>
+    `<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div><div class="m">${m}</div>` +
+    `${UI.prevLine(null, prevVals[i], prevFmt[i])}</div>`).join('');
+  const host = document.getElementById('closeSplit');
+  if(!tot){ host.innerHTML=''; return; }
+  const p = n => (n/tot*100).toFixed(1);
+  host.innerHTML = `<div class="splitbar-track" role="img" aria-label="${deals.length} נסגרו מתוך ${tot}"><div class="seg closed" style="width:${p(deals.length)}%"><span>נסגרו ${int(deals.length)}</span></div><div class="seg open" style="width:${p(appts.length)}%"><span>לא נסגרו ${int(appts.length)}</span></div></div><div class="splitbar-foot">שיעור סגירה ${pct(deals.length/tot)} · ${int(tot)} ייעוצים בחודש ${q('close_rate_sig')}</div>`;
+}
+async function renderMonth(){
+  const err = document.getElementById('dealErr'); err.classList.add('hidden');
+  try{
+    const [rows, pm] = await Promise.all([
+      rest(`signature_rows?period_month=eq.${MONTH}&order=record_date,client_name&limit=5000`),
+      // האגרגט של החודש הקודם — למנהלים בלבד; ליועצת הוא מוחזר ריק וזה בסדר
+      rest(`signature_month?period_month=eq.${UI.prevMonth(MONTH)}`).catch(()=>[]),
+    ]);
+    ROWS = rows; PREV_M = (pm && pm[0]) || null;
+  }
+  catch(e){ err.classList.remove('hidden'); err.textContent = 'טעינה נכשלה: '+e.message; ROWS=[]; PREV_M=null; }
+  document.getElementById('asof').textContent = `${int(ROWS.length)} שורות · ${heb(MONTH)}` + (UI.isStaff()?' · השורות שלך':'');
+  renderTiles(); renderMonthTables(); renderCalendar();
+  document.getElementById('foot').innerHTML = `חוסר = שדה שאינו V/✅ ואין עליו ויתור ${q('missing_count')} · תיעוד קצר = עד 25 תווים ברפיד ${q('short_doc')} · ההזנה הידנית הוסרה — אישורים והערות נעשים מכאן.`;
+}
+
+// ---- לוח החודש (קפיצה לתאריך)
+function renderCalendar(){
+  const host = document.getElementById('daycal');
+  const y = Number(MONTH.slice(0,4)), mo = Number(MONTH.slice(5,7));
+  const lead = new Date(Date.UTC(y,mo-1,1)).getUTCDay(), ndays = new Date(Date.UTC(y,mo,0)).getUTCDate(), todayIso = UI.today();
+  const by = new Map();
+  for(const r of ROWS){ if(!r.record_date) continue; const e = by.get(r.record_date)||{deals:0,appts:0,miss:0}; if(r.block_type==='deal') e.deals++; else e.appts++; if(Number(r.missing_count)>0) e.miss++; by.set(r.record_date,e); }
+  const cells = [];
+  for(let k=0;k<lead;k++) cells.push('<div class="daycal-cell pad"></div>');
+  for(let d=1; d<=ndays; d++){
+    const iso = `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`, e = by.get(iso);
+    const cls = ['daycal-cell', !e?'empty':'', iso===todayIso?'today':'', iso===SEL_DAY?'sel':''].join(' ');
+    cells.push(`<button class="${cls}" type="button" ${e?`data-day="${iso}"`:'disabled'} title="${e?`${d}/${mo}: ${e.deals} נסגרו · ${e.appts} לא נסגרו · ${e.miss} עם חוסר`:`${d}/${mo}: אין שורות`}"><span class="d">${d}</span><span class="n">${e?`${e.deals}/${e.appts}`:''}</span><span class="miss${e&&!e.miss?' none':''}">${e?(e.miss||'✓'):''}</span></button>`);
+  }
+  host.innerHTML = `<div class="daycal-head"><span class="daycal-title">${heb(MONTH)}</span><span class="sub">נסגרו/לא נסגרו · אדום = שורות עם חוסר</span></div><div class="daycal-grid">${UI.DOW.map(x=>`<div class="daycal-dow">${x}</div>`).join('')}</div><div class="daycal-grid">${cells.join('')}</div>`;
+}
+document.getElementById('daycal').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-day]'); if(!b) return;
+  SEL_DAY = SEL_DAY===b.dataset.day ? null : b.dataset.day;
+  renderCalendar(); renderMonthTables();
+  if(!SEL_DAY) return;
+  const first = document.querySelector(`#tab-month tbody tr[data-date="${SEL_DAY}"]`); if(!first) return;
+  const box = first.closest('.scroll'); if(box){ const top = first.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop; box.scrollTop = Math.max(0, top - box.clientHeight/2); }
+  first.closest('.card').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+// ---- אישור ויתור / הערה על תא (סופר אדמין)
+document.addEventListener('click', async e=>{
+  const td = e.target.closest('td[data-sig][data-field]');
+  if(td){ openWaive(Number(td.dataset.sig), td.dataset.field); return; }
+  const tb = e.target.closest('button[data-thread]');
+  if(tb){ openThread(Number(tb.dataset.thread), null); }
+});
+function rowOf(id){ return ROWS.find(r=>r.sig_id===id); }
+function openWaive(sigId, field){
+  const r = rowOf(sigId); if(!r) return;
+  const w = (r.waivers||{})[field];
+  UI.modal({ title:`${FIELDS[field]} — ${esc(r.client_name)} · ${dm(r.record_date)}`, body:
+    `<div class="info">${w ? `יש ויתור מאושר על החוסר הזה: <b>${esc(w.by_name||w.by||'')}</b> · ${UI.time(w.at)}${w.note?` · ${esc(w.note)}`:''}. ביטול הוויתור יחזיר את החוסר לספירה.` : `השדה חסר ונספר כחוסר. אישור ויתור = "אני יודעת, לא לספור" — נרשם עם השם שלך ואפשר לבטל.`}</div>
+     <div class="compose"><textarea id="wNote" placeholder="הערה (לא חובה) — למשל: נחתם ידנית, נמצא בתיק">${w?esc(w.note||''):''}</textarea></div>
+     <div class="row" style="gap:8px;justify-content:flex-start;padding:8px 0">${w ? `<button class="btn bad sm" id="wUndo">ביטול הוויתור — לספור שוב</button>` : `<button class="btn good sm" id="wOk">✓ אישור ויתור — לא לספור</button>`}<button class="btn ghost sm" id="wNoteOnly">רק לשמור הערה</button><button class="btn soft sm" id="wThread">💬 לפתוח את השרשור</button></div>` });
+  const body = UI.modalBody();
+  const note = () => body.querySelector('#wNote').value.trim();
+  const after = async msg => { UI.toast(msg,'good'); UI.closeModal(); await renderMonth(); if(tabs.current()==='consultants') renderConsultants(); };
+  body.querySelector('#wOk')?.addEventListener('click', async()=>{ try{ await UI.rpc('waive_signature_field',{p_sig_id:sigId,p_field:field,p_waive:true,p_note:note()||null}); await after('הוויתור אושר ✓'); }catch(err){ UI.toast(err.message,'bad'); } });
+  body.querySelector('#wUndo')?.addEventListener('click', async()=>{ try{ await UI.rpc('waive_signature_field',{p_sig_id:sigId,p_field:field,p_waive:false,p_note:note()||null}); await after('הוויתור בוטל — החוסר נספר שוב'); }catch(err){ UI.toast(err.message,'bad'); } });
+  body.querySelector('#wNoteOnly').addEventListener('click', async()=>{ if(!note()) return UI.toast('ההערה ריקה','warn'); try{ await UI.rpc('add_signature_note',{p_sig_id:sigId,p_field:field,p_text:note(),p_kind:'note'}); await after('ההערה נשמרה'); }catch(err){ UI.toast(err.message,'bad'); } });
+  body.querySelector('#wThread').addEventListener('click', ()=>openThread(sigId, field));
+}
+
+// ---- שרשור הערות/בקשות על שורה
+async function openThread(sigId, field){
+  const r = rowOf(sigId) || {};
+  UI.modal({ title:`💬 ${esc(r.client_name||'')} · ${dm(r.record_date)} · ${esc(r.consultant_raw||'')}`, wide:true, body:'<div class="load">טוען…</div>' });
+  const draw = async () => {
+    const notes = await rest(`signature_notes?sig_id=eq.${sigId}&order=created_at`);
+    const kindTxt = k => ({note:'הערה', request:'בקשת אישור', reply:'תשובה', decision:'החלטה'})[k]||k;
+    const me = UI.access().email;
+    UI.modalBody().innerHTML = `<div class="thread">${notes.map(n=>`<div class="msg ${n.kind} ${n.author_email===me?'mine':''}"><div class="who"><b>${esc(n.author_name||n.author_email||'')}</b> · <span class="chip ${n.kind==='request'?(n.resolved_at?(n.resolution==='approved'?'good':'bad'):'warn'):n.kind==='decision'?'lavender':''}">${kindTxt(n.kind)}${n.field?' · '+FIELDS[n.field]:''}${n.kind==='request'&&n.resolved_at?` · ${n.resolution==='approved'?'אושר':n.resolution==='denied'?'נדחה':'נפתח מחדש'} ע"י ${esc((n.resolved_by||'').split('@')[0])}`:''}</span> <span class="sub">${UI.time(n.created_at)}</span></div><div class="txt">${esc(n.text)}</div>` +
+      (UI.canWrite() && n.kind==='request' ? `<div class="row" style="gap:6px;padding-top:6px">${n.resolved_at ? `<button class="btn ghost xs" data-res="reopened" data-id="${n.note_id}">פתיחה מחדש</button>` : `<button class="btn good xs" data-res="approved" data-id="${n.note_id}">✓ אישור${n.field?' + ויתור':''}</button><button class="btn bad xs" data-res="denied" data-id="${n.note_id}">✗ דחייה</button>`}</div>` : '') + `</div>`).join('') || '<div class="empty">עדיין אין הערות על השורה</div>'}</div>` +
+      `<div class="compose"><select id="tKind">${UI.canWrite() ? '<option value="reply">תשובה</option><option value="note">הערה</option>' : '<option value="request">בקשת אישור (סופר אדמין יאשר/ידחה)</option><option value="note">הערה</option>'}</select><select id="tField"><option value="">כל השורה</option>${Object.entries(FIELDS).filter(([k])=>r.block_type==='deal'?k!=='pricelist_offer':!['health_declaration','consent_form','email_agreement'].includes(k)).map(([k,v])=>`<option value="${k}" ${field===k?'selected':''}>${v}</option>`).join('')}</select><textarea id="tText" placeholder="כתבי כאן…"></textarea><button class="btn sm" id="tSend">שליחה</button></div>`;
+    UI.modalBody().querySelector('#tSend').onclick = async()=>{ const t = UI.modalBody().querySelector('#tText').value.trim(); if(!t) return; try{ await UI.rpc('add_signature_note',{p_sig_id:sigId,p_field:UI.modalBody().querySelector('#tField').value||null,p_text:t,p_kind:UI.modalBody().querySelector('#tKind').value}); UI.toast('נשלח ✓','good'); await draw(); await renderMonth(); }catch(err){ UI.toast(err.message,'bad'); } };
+    UI.modalBody().querySelectorAll('button[data-res]').forEach(b=>b.onclick=async()=>{ const reply = prompt(b.dataset.res==='approved'?'תשובה (לא חובה):':b.dataset.res==='denied'?'סיבת הדחייה (לא חובה):':'הערה (לא חובה):',''); if(reply===null) return; try{ await UI.rpc('resolve_signature_request',{p_note_id:Number(b.dataset.id),p_resolution:b.dataset.res,p_reply:reply||null}); UI.toast('נרשם ✓','good'); await draw(); await renderMonth(); if(tabs.current()==='consultants') renderConsultants(); }catch(err){ UI.toast(err.message,'bad'); } });
+  };
+  try{ await draw(); }catch(e){ UI.modalBody().innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+// ---- חוסרים לפי יועצות
+async function renderConsultants(){
+  const el = document.getElementById('consGrid'); el.querySelector('tbody').innerHTML = '<tr><td class="load">טוען…</td></tr>';
+  let rows, reqs;
+  try{ [rows, reqs] = await Promise.all([rest(`signature_by_consultant?period_month=eq.${MONTH}&order=rows_missing.desc`), rest(`signature_notes?period_month=eq.${MONTH}&kind=eq.request&resolved_at=is.null&order=created_at`)]); }
+  catch(e){ el.querySelector('tbody').innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const COLS = [['consultant_raw','יועצת'],['rows_total','שורות'],['deals','נסגרו'],['appointments','לא נסגרו'],['rows_missing','שורות עם חוסר'],['miss_health','הצהרת בריאות'],['miss_consent','הסכמה'],['miss_doc','תיעוד'],['miss_tablet','טאבלט'],['miss_email','מייל'],['miss_offer','הצעת מחיר'],['short_docs','תיעוד קצר'],['waived_rows','ויתורים'],['open_requests','בקשות פתוחות']];
+  el.querySelector('thead').innerHTML = `<tr>${COLS.map(c=>`<th>${c[1]}${c[0]==='rows_missing'?' '+q('missing_count'):c[0]==='short_docs'?' '+q('short_doc'):c[0]==='waived_rows'?' '+q('waiver'):''}</th>`).join('')}</tr>`;
+  const maxMiss = Math.max(...rows.map(r=>r.rows_missing),1);
+  el.querySelector('tbody').innerHTML = rows.map(r=>`<tr class="${r.consultant_raw===UI.label()?'me':''}">${COLS.map(([k])=>{
+    if(k==='consultant_raw') return `<td><a href="#" class="cons" data-name="${esc(r.consultant_raw)}">${esc(r.consultant_raw)}</a></td>`;
+    if(k==='rows_missing') return `<td class="num">${UI.databar(r[k], maxMiss, r[k]?'bad':'good', int(r[k]))}</td>`;
+    if(k==='open_requests') return `<td class="num ${r[k]?'warn':'dash'}">${r[k]?'⏳ '+int(r[k]):'—'}</td>`;
+    return `<td class="num ${Number(r[k])?(k.startsWith('miss')||k==='short_docs'?'neg':''):'dash'}">${Number(r[k])?int(r[k]):'—'}</td>`; }).join('')}</tr>`).join('') || '<tr><td colspan="14" class="dash">אין נתונים</td></tr>';
+  el.querySelectorAll('a.cons').forEach(a=>a.onclick=e=>{ e.preventDefault(); openConsultant(a.dataset.name); });
+  document.getElementById('reqNote').textContent = `${reqs.length} בקשות ממתינות לסופר אדמין`;
+  document.getElementById('openReqs').innerHTML = reqs.map(n=>`<div class="leader"><span class="nm">${esc(n.author_name||n.author_email||'')} · ${esc(n.consultant_raw||'')}</span><span class="sub" style="flex:1">${esc(n.client_name)} · ${dm(n.record_date)}${n.field?' · '+FIELDS[n.field]:''}: ${esc(n.text)}</span><button class="btn ghost xs" data-thread="${n.sig_id}">💬 פתיחה</button></div>`).join('') || '<div class="empty">אין בקשות פתוחות 🎉</div>';
+}
+function openConsultant(name){
+  const rows = ROWS.filter(r=>r.consultant_raw===name);
+  const miss = rows.filter(r=>Number(r.missing_count)>0 || r.open_requests>0 || (r.waivers && Object.keys(r.waivers).length));
+  UI.modal({ title:`${esc(name)} — חוסרים · ${heb(MONTH)}`, wide:true, body:
+    `<div class="filterbar"><span class="chip pink">${rows.length} שורות</span><span class="chip bad">${rows.filter(r=>Number(r.missing_count)>0).length} עם חוסר</span><span class="chip warn">${rows.reduce((s,r)=>s+Number(r.open_requests||0),0)} בקשות פתוחות</span></div>` +
+    UI.dayGroups(miss, 'record_date', dr => `<div class="scroll"><table><thead><tr><th>שם</th><th>סוג</th><th>מה חסר</th><th>💬</th></tr></thead><tbody>${dr.map(r=>{ const fields = Object.keys(FIELDS).filter(f => (r.block_type==='deal' ? f!=='pricelist_offer' : !['health_declaration','consent_form','email_agreement'].includes(f)));
+      return `<tr><td>${clientLink(r)}</td><td>${r.block_type==='deal'?'עסקה':'פגישה'}</td><td>${fields.map(f=>{ const w=(r.waivers||{})[f]; const ok=isOk(r[f]); if(ok && !w) return ''; return `<span class="chip ${w?'good':'bad'} ${UI.canWrite()?'clickable':''}" ${UI.canWrite()?`data-sig="${r.sig_id}" data-field="${f}" role="button"`:''}>${w?'✓':'✗'} ${FIELDS[f]}</span>`; }).join(' ')}${r.short_doc?' <span class="chip warn">⚠ תיעוד קצר</span>':''}</td><td><button class="iconbtn ${r.open_requests?'warn':''}" data-thread="${r.sig_id}">💬${r.notes_count?`<b>${r.notes_count}</b>`:''}</button></td></tr>`; }).join('')}</tbody></table></div>`, { open:'all', empty:'אין חוסרים 🎉', summary:(d,dr)=>`${dr.length} שורות` }) });
+  UI.modalBody().addEventListener('click', e=>{ const c = e.target.closest('.chip[data-sig]'); if(c){ openWaive(Number(c.dataset.sig), c.dataset.field); } });
+}
+
+// ---- רפיד מול ידני
+async function renderMismatch(){
+  const el = document.getElementById('misGrid'); el.querySelector('tbody').innerHTML='<tr><td class="load">טוען…</td></tr>';
+  let rows; try{ rows = await rest(`signature_mismatch?period_month=eq.${MONTH}&order=record_date`); }catch(e){ el.querySelector('tbody').innerHTML=`<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const F = v => { const s=String(v??'').trim(); return s?`<span class="${isOk(s)?'pos':'neg'}" title="${esc(s)}">${s.length>6?s.slice(0,1):esc(s)}</span>`:'<span class="dash">—</span>'; };
+  el.querySelector('thead').innerHTML = '<tr><th>תאריך</th><th>שם</th><th>יועצת</th><th>סוג</th><th>הצהרת בריאות · ידני</th><th>רפיד</th><th>הסכמה · ידני</th><th>רפיד</th><th>תיעוד · ידני</th><th>רפיד</th><th>יועצת בתיעוד</th><th>הצעת מחיר · ידני</th><th>רפיד</th></tr>';
+  el.querySelector('tbody').innerHTML = rows.map(r=>`<tr><td>${dm(r.record_date)}</td><td>${esc(r.client_name)}</td><td>${esc(r.consultant_raw)}</td><td>${r.block_type==='deal'?'עסקה':'פגישה'}</td><td>${F(r.health_declaration)}</td><td class="${r.health_conflict?'miss':''}">${F(r.health_declaration_rapid)}</td><td>${F(r.consent_form)}</td><td>${F(r.consent_form_rapid)}</td><td>${F(r.documentation)}</td><td class="${r.doc_conflict?'miss':''}">${F(r.documentation_rapid)}</td><td class="${r.doc_staff_conflict?'miss':''}">${esc(r.documentation_staff_rapid||'')}</td><td>${F(r.pricelist_offer)}</td><td>${F(r.price_offer_rapid)}</td></tr>`).join('') || '<tr><td colspan="13" class="dash">אין אי-התאמות 🎉</td></tr>';
+}
+
+// ---- השוואה שנתית
+const ANN_METRICS = [['deals','עסקאות','int'],['deals_amount','סכום','money'],['appointments','פגישות','int'],['deals_missing','עסקאות עם חוסר','int'],['appts_missing','פגישות עם חוסר','int'],['miss_health','הצהרת בריאות','int'],['miss_consent','הסכמה','int'],['miss_doc','תיעוד','int'],['miss_tablet','טאבלט','int'],['miss_email','מייל','int'],['short_docs','תיעוד קצר','int'],['waived_rows','ויתורים','int']];
+const annFmt = (v,k) => v==null?'—':k==='money'?money(v):int(v);
+async function renderAnnual(){
+  const body = document.querySelector('#annGrid tbody'); body.innerHTML='<tr><td class="load">טוען…</td></tr>';
+  const sel = document.getElementById('annMetric');
+  if(!sel.options.length){ sel.innerHTML = ANN_METRICS.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join(''); sel.value='miss_doc'; sel.onchange=drawAnnualChart; document.getElementById('annKind').onchange=drawAnnualChart; }
+  try{ ANN_CACHE = (await rest('signature_month?order=period_month')).filter(t=>t.period_month); }catch(e){ body.innerHTML=`<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const totals = ANN_CACHE; if(!totals.length){ body.innerHTML='<tr><td class="dash">אין נתונים</td></tr>'; return; }
+  const S = k => totals.reduce((a,t)=>a+Number(t[k]||0),0); const worst=[...totals].sort((a,b)=>Number(b.miss_doc)-Number(a.miss_doc))[0];
+  document.getElementById('annTiles').innerHTML = [['סה״כ עסקאות',int(S('deals')),`${totals.length} חודשים`],['סה״כ סכום',money(S('deals_amount')),''],['סה״כ פגישות',int(S('appointments')),''],['חוסרי תיעוד',int(S('miss_doc')),`טאבלט ${int(S('miss_tablet'))}`],['חוסרי הצהרת בריאות',int(S('miss_health')),`הסכמה ${int(S('miss_consent'))}`],['החודש עם הכי הרבה חוסרי תיעוד',worst?UI.shortMonth(worst.period_month):'—',worst?`${int(worst.miss_doc)} · ${heb(worst.period_month)}`:'']].map(([k,v,m])=>`<div class="tile"><div class="k">${k}</div><div class="v small">${v}</div>${m?`<div class="m">${m}</div>`:''}</div>`).join('');
+  const cols=[...totals];
+  document.querySelector('#annGrid thead').innerHTML = `<tr><th>מדד</th>${cols.map(t=>`<th class="${t.period_month===MONTH?'selmonth':''}">${heb(t.period_month)}</th>`).join('')}</tr>`;
+  body.innerHTML = ANN_METRICS.map(([k,l,kind])=>`<tr><td>${l}</td>${cols.map(t=>`<td class="num ${t.period_month===MONTH?'selmonth':''}">${annFmt(t[k],kind)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('annFoot').textContent = `${totals.length} חודשים · ${heb(totals[0].period_month)} – ${heb(totals[totals.length-1].period_month)} · החוסרים נספרים אחרי ויתורים`;
+  drawAnnualChart();
+}
+function drawAnnualChart(){
+  if(!ANN_CACHE) return;
+  const key=document.getElementById('annMetric').value, meta=ANN_METRICS.find(m=>m[0]===key), kind=document.getElementById('annKind').value;
+  const pts = ANN_CACHE.map(t=>({m:t.period_month, v:Number(t[key])})).filter(d=>isFinite(d.v));
+  const fmt=v=>annFmt(v,meta[2]), yfmt = meta[2]==='money'?v=>UI.k(v,{plain:true}):int;
+  if(kind==='lines') UI.chart.lines('#annChart',{labels:pts.map(p=>UI.shortMonth(p.m)), series:[{name:meta[1], values:pts.map(p=>p.v)}], fmt, yfmt, area:true, title:meta[1]});
+  else UI.chart.bars('#annChart',{items:pts.map(p=>({label:UI.shortMonth(p.m), value:p.v, sel:p.m===MONTH, cls:'c3'})), fmt, yfmt, title:meta[1]});
+}
+
+document.getElementById('search').addEventListener('input', UI.debounce(renderMonthTables, 120));
+// "רק עם חוסרים": תיבה בכותרת + כפתורים בשתי הטבלאות — כולם אותו מצב
+function syncOnlyMissing(){ const on = document.getElementById('onlyMissing').checked;
+  document.querySelectorAll('.onlyMissCb').forEach(c=>{ c.checked = on; c.closest('label').classList.toggle('on', on); }); }
+document.getElementById('onlyMissing').addEventListener('change', ()=>{ syncOnlyMissing(); renderMonthTables(); });
+document.querySelectorAll('.onlyMissCb').forEach(c=>c.addEventListener('change', ()=>{ document.getElementById('onlyMissing').checked = c.checked; syncOnlyMissing(); renderMonthTables(); }));
+syncOnlyMissing();
+document.getElementById('incFollowups').addEventListener('change', renderMonthTables);
+document.addEventListener('access-ready', () => UI.applyVisibility());
+(async function init(){
+  try{
+    const months = await rest('signature_months?select=period_month&order=period_month.desc');
+    const list = months.map(m=>m.period_month); const sel = document.getElementById('month');
+    UI.fillMonths(sel, list, list[0]); MONTH = list[0];
+    sel.onchange = async()=>{ MONTH = sel.value; SEL_DAY=null; await renderMonth(); const t=tabs.current(); if(t==='consultants') renderConsultants(); if(t==='mismatch') renderMismatch(); if(t==='annual') renderAnnual(); };
+    if(!MONTH){ document.getElementById('tiles').innerHTML='<div class="err">אין נתונים.</div>'; return; }
+    await renderMonth();
+  }catch(err){ document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<div class="card"><div class="err">טעינה נכשלה: ${esc(err.message)}</div></div>`); }
+})();
+</script>
+</body>
+</html>

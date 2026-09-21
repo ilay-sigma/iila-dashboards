@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>404 — הדף לא נמצא · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body>
+<main class="authpage">
+  <div class="authcard page404">
+    <span class="brand" role="img" aria-label="אילה ברלין — Pro Cosmetics"></span>
+    <p class="page404-code" aria-hidden="true">404</p>
+    <h1>הדף לא נמצא</h1>
+    <p class="sub">ייתכן שהקישור שגוי, שהדף הוסר, או שאין לך הרשאה לצפות בו.</p>
+    <p class="page404-path-wrap"><code class="page404-path" id="path"></code></p>
+    <div class="page404-actions">
+      <a class="btn" id="homeBtn" href="login.html">חזרה למעקב המכירות</a>
+      <button class="btn ghost" type="button" id="backBtn">דף קודם</button>
+    </div>
+    <div class="foot">מעקב המכירות · אילה ברלין Pro Cosmetics</div>
+  </div>
+</main>
+<script>
+(function () {
+  const pathEl = document.getElementById('path');
+  const homeBtn = document.getElementById('homeBtn');
+  const backBtn = document.getElementById('backBtn');
+
+  const shown = (location.pathname || '/') + (location.search || '');
+  pathEl.textContent = shown === '/' ? location.href.replace(/^https?:\/\/[^/]+/, '') || '/' : shown;
+
+  backBtn.addEventListener('click', () => {
+    if (history.length > 1) history.back();
+    else location.href = 'login.html';
+  });
+
+  try {
+    const access = JSON.parse(localStorage.getItem('dash.access') || 'null');
+    const session = JSON.parse(localStorage.getItem('dash.session') || 'null');
+    if (access && access.authorized && access.landing && session && session.access_token) {
+      homeBtn.href = access.landing;
+      homeBtn.textContent = 'חזרה לדוח שלי';
+    }
+  } catch { /* אין סשן — נשאר login.html */ }
+})();
+</script>
+</body>
+</html>

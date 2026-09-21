@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>אמצעי תשלום ו-ERN · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+<style>
+  /* צבעי הסדרות של הדוח הזה בלבד. פלטה קטגורית מאומתת (validate_palette.js, light+dark):
+     כל זוג שכן נבדל גם בעיוורון צבעים. הסדר קבוע — ERN תמיד אותו צבע, בכל טבלה ובכל גרף. */
+  :root{
+    --pm-ern:#2a78d6; --pm-regular:#eb6834; --pm-grow:#1baf7a;
+    --pm-transfer:#eda100; --pm-cash:#e87ba4; --pm-check:#008300; --pm-other:#8E858A;
+  }
+  /* 21/09/2026 — היה @media (prefers-color-scheme: dark), כלומר הצבעים התחלפו לפי
+     הגדרת מערכת ההפעלה ולא לפי ערכת הנושא של האתר: מי שבחר תצוגה בהירה במחשב
+     שמוגדר כהה קיבל את גוני המצב הכהה על רקע בהיר (ולהפך). הבחירה באתר היא
+     data-theme, ולכן זה הסלקטור הנכון. */
+  :root[data-theme="dark"]{
+    --pm-ern:#3987e5; --pm-regular:#d95926; --pm-grow:#199e70;
+    --pm-transfer:#c98500; --pm-cash:#d55181; --pm-check:#008300; --pm-other:#8E858A;
+  }
+  /* פס פילוח 100% — קטעים עם רווח 2px בצבע המשטח (בלי מסגרות) */
+  .pm-track{ display:flex; gap:2px; height:30px; border-radius:var(--r-pill); overflow:hidden; background:var(--panel); border:1px solid var(--line); }
+  .pm-track .seg{ display:flex; align-items:center; justify-content:center; min-width:0; overflow:hidden; font-size:12px; font-weight:800; color:#fff; font-family:var(--font-num); }
+  .pm-track .seg span{ padding:0 8px; overflow:hidden; text-overflow:ellipsis; }
+  .pm-mini{ display:flex; gap:2px; height:10px; width:min(180px,100%); border-radius:var(--r-pill); overflow:hidden; background:var(--grid); margin:0 auto; }
+  .pm-mini i{ display:block; height:100%; }
+  .pm-body{ padding:16px 18px 6px; }
+  .pm-wrap{ position:relative; padding-bottom:18px; }
+  .pm-target{ position:absolute; top:-6px; bottom:12px; width:3px; background:var(--bad); border-radius:2px; z-index:2; pointer-events:none; }
+  .pm-target::after{ content:attr(data-l); position:absolute; top:100%; inset-inline-start:50%; transform:translateX(50%); font:800 11px/1.4 var(--font-num); color:var(--bad-ink); white-space:nowrap; }
+  .fillbar .bar{ position:relative; overflow:visible; }
+  .fillbar .bar .tmark{ position:absolute; top:-4px; bottom:-4px; width:3px; background:var(--bad); border-radius:2px; }
+  .pm-target-note{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 18px 4px; font-size:13px; font-weight:700; }
+  .pm-target-note .msg.neg{ color:var(--bad-ink); } .pm-target-note .msg.warn{ color:var(--warn-ink); } .pm-target-note .msg.pos{ color:var(--good-ink); }
+  .pm-target-note .set{ margin-inline-start:auto; color:var(--muted); font-weight:600; }
+  .pm-target-note .pencil{ border:0; background:transparent; cursor:pointer; color:var(--muted); font-size:13px; padding:0 4px; } .pm-target-note .pencil:hover{ color:var(--accent); }
+  .pm-track .seg{ transition:flex .45s ease; }
+  /* בורר מחלקות בכרטיס הפילוח — גלולות עם תיבת סימון */
+  .dept-chips{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .dept-chips label{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--txt);
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-pill); padding:5px 12px 5px 9px; cursor:pointer; user-select:none; }
+  .dept-chips label:hover{ border-color:color-mix(in srgb, var(--txt) 28%, var(--line)); }
+  .dept-chips label:has(input:checked){ border-color:var(--accent); background:var(--accent-soft); }
+  .dept-chips input{ accent-color:var(--accent); width:14px; height:14px; margin:0; cursor:pointer; }
+  .dept-chips .sub{ font-weight:600; }
+  /* גרף מתמלא ליד האחוז — מתחיל מ-0 ומתמלא לערך */
+  .fillbar{ display:inline-flex; align-items:center; gap:8px; min-width:150px; }
+  .fillbar .bar{ flex:1; height:10px; border-radius:var(--r-pill); background:var(--grid); overflow:hidden; min-width:90px; }
+  .fillbar .bar i{ display:block; height:100%; width:0; border-radius:var(--r-pill); background:var(--c, var(--ink-soft)); transition:width .8s cubic-bezier(.2,.8,.2,1); }
+  .fillbar .pct{ font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:800; min-width:52px; text-align:left; }
+  @media (prefers-reduced-motion: reduce){ .fillbar .bar i, .pm-track .seg{ transition:none; } }
+  .pm-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; color:var(--txt); background:var(--panel3); border:1px solid var(--line); border-radius:var(--r-pill); padding:2px 8px 2px 6px; margin-inline-end:4px; }
+  .pm-chip .sw{ width:9px; height:9px; border-radius:3px; display:inline-block; }
+  th[data-sort]{ cursor:pointer; user-select:none; }
+  th[data-sort]:hover{ color:var(--accent); }
+  th[data-sort].on::after{ content:" ▾"; color:var(--accent); }
+  tr[data-group]{ cursor:pointer; }
+  tr[data-group] td:first-child{ user-select:none; }
+  tr[data-group]:hover td{ background:var(--hover); }
+  .caret{ display:inline-block; width:12px; color:var(--accent); font-size:12px; }
+  tbody tr.clickable{ cursor:pointer; }
+  .presets{ display:flex; gap:6px; flex-wrap:wrap; }
+  .presets .btn{ padding:6px 12px; font-size:12.5px; }
+  .chartwrap .line.ref{ stroke:var(--muted); stroke-width:2; }
+  .chartwrap .endlbl{ fill:var(--txt); font-size:12px; font-weight:800; font-family:var(--font-num); }
+  .chartwrap .ptlbl{ fill:var(--txt); font-size:11px; font-weight:800; font-family:var(--font-num); paint-order:stroke; stroke:var(--panel); stroke-width:3px; }
+  .chart-tip{ display:none; }
+  .chart-tip.show{ display:block; }
+  .chart-tip .row{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .chart-tip .row b{ font-family:var(--font-num); font-variant-numeric:tabular-nums; }
+  .chart-tip .row i{ display:inline-block; width:14px; height:0; border-top:3px solid currentColor; border-radius:2px; margin-inline-end:6px; vertical-align:middle; }
+  /* ערך אריח משני חלקים — אחוז גדול מימין וסכום קטן לצידו */
+  .tile .v .duo{ display:inline-flex; align-items:baseline; gap:8px; }
+  .tile .v .duo b{ font-weight:800; }
+  .tile .v .duo i{ font-style:normal; font-size:.66em; font-weight:700; opacity:.72; }
+  .tile .v .duo i::before{ content:"· "; opacity:.55; }
+
+  /* סרגל אחוז ERN — סקאלה קבועה עם סימונים במדרגות (35% / 45%); הצבע לפי המדרגה */
+  .ern{ display:flex; align-items:center; gap:10px; min-width:230px; }
+  .ern .track{ position:relative; flex:1; min-width:140px; height:14px; border-radius:var(--r-pill); background:var(--grid); overflow:visible; }
+  .ern .fill{ display:block; height:100%; border-radius:var(--r-pill); background:var(--ink-soft); transition:width .3s ease; }
+  .ern .fill.pos{ background:var(--good); } .ern .fill.warn{ background:var(--warn); } .ern .fill.neg{ background:var(--bad); }
+  .ern .mark{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--txt); opacity:.55; border-radius:1px; }
+  .ern .mark.target{ background:var(--bad); opacity:1; width:3px; top:-6px; bottom:-6px; }
+  .ern .mark.target::after{ color:var(--bad-ink); font-weight:800; }
+  .chartwrap .line.target{ stroke-dasharray:7 5; stroke-width:2.5; }
+  .tile .m .pencil{ border:0; background:transparent; cursor:pointer; color:var(--muted); font-size:12px; padding:0 4px; }
+  .tile .m .pencil:hover{ color:var(--accent); }
+  .ern .mark::after{ content:attr(data-l); position:absolute; top:100%; inset-inline-start:50%; transform:translateX(50%); font:700 9.5px/1.4 var(--font-num); color:var(--muted); white-space:nowrap; }
+  [dir=rtl] .ern .mark::after{ transform:translateX(50%); }
+  .ern .pct{ font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; min-width:58px; text-align:left; }
+  .ern .pct.pos{ color:var(--good-ink); } .ern .pct.warn{ color:var(--warn-ink); } .ern .pct.neg{ color:var(--bad-ink); }
+  td.ern-cell{ padding-top:12px; padding-bottom:14px; }
+  .pm-pdf{ display:flex; gap:10px 22px; flex-wrap:wrap; padding:14px 18px; font-size:13px; font-weight:600; }
+  .pm-pdf b{ font-family:var(--font-num); }
+</style>
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>אמצעי תשלום ו-ERN</h1>
+  <select id="month" title="חודש"></select>
+  <span class="sub" id="asof"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="month"  aria-selected="true">חודשי</button>
+    <button data-tab="annual" aria-selected="false">השוואה שנתית</button>
+    <button data-tab="range"  aria-selected="false">טווח תאריכים</button>
+  </nav>
+</header>
+<div class="chart-tip" id="tip" role="status" aria-live="polite"></div>
+<div class="wrap">
+
+  <!-- ================= חודשי ================= -->
+  <section id="tab-month" data-prefix="m"></section>
+
+  <!-- ================= השוואה שנתית ================= -->
+  <section id="tab-annual" class="hidden">
+    <div class="tiles" id="annTiles"></div>
+    <div class="card">
+      <h2>
+        מגמה לפי חודש
+        <label class="sub" style="display:flex;align-items:center;gap:8px;">מדד <select id="annMetric"></select></label>
+        <label class="sub" style="display:flex;align-items:center;gap:8px;">מי <select id="annPerson"></select></label>
+        <span class="note">נקודות מחוברות · ריחוף מציג את ערכי החודש · חודש פתוח מסומן ב-•</span>
+      </h2>
+      <div class="chart-legend" id="annLegend"></div>
+      <div class="chartwrap"><div id="annChart"></div></div>
+    </div>
+    <div class="card">
+      <h2>השוואת חודשים — כל החברה <span class="note">שורה = מדד, עמודה = חודש · החודש הנבחר מסומן</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>לפי איש צוות לפי חודש <span class="note">אחוז ERN, סכומים או ממוצע תשלומים — לפי הבורר · ריחוף מציג את הפירוט</span></h2>
+      <div class="filterbar">
+        <label class="search-field" title="חיפוש">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input type="search" id="annSearch" placeholder="שם…" autocomplete="off" />
+        </label>
+        <select id="annPersonMetric" title="מה מוצג בתא">
+          <option value="ern_pct">% ERN מהתקבולים</option>
+          <option value="credit_ern">ERN ₪</option>
+          <option value="total">סה״כ תקבולים ₪</option>
+          <option value="avg_payments">ממוצע תשלומים — כל האשראי</option>
+          <option value="avg_payments_ern">ממוצע תשלומים — ERN</option>
+          <option value="avg_payments_regular">ממוצע תשלומים — רגיל</option>
+        </select>
+        <button class="btn ghost" type="button" id="annCollapse" title="להציג רק את שורות הסיכום של המחלקות">כווץ הכול</button>
+        <button class="btn ghost" type="button" id="annExpand" title="להציג את כל אנשי הצוות">הרחב הכול</button>
+        <span class="count" id="annCount"></span>
+      </div>
+      <div class="scroll"><table id="annPersons"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="annFoot"></div>
+  </section>
+
+  <!-- ================= טווח תאריכים ================= -->
+  <section id="tab-range" class="hidden">
+    <div class="card">
+      <div class="filterbar">
+        <label class="sub">מתאריך <input type="date" id="rFrom" /></label>
+        <label class="sub">עד תאריך <input type="date" id="rTo" /></label>
+        <button class="btn" type="button" id="rApply">הצג</button>
+        <span class="presets" id="rPresets">
+          <button class="btn ghost" type="button" data-preset="week">7 ימים</button>
+          <button class="btn ghost" type="button" data-preset="30">30 יום</button>
+          <button class="btn ghost" type="button" data-preset="90">90 יום</button>
+          <button class="btn ghost" type="button" data-preset="q">רבעון נוכחי</button>
+          <button class="btn ghost" type="button" data-preset="ytd">מתחילת השנה</button>
+        </span>
+        <!-- 21/09/2026: היה id="rCount" — אותו מזהה בדיוק שנוצר גם בתוך sliceHTML('r'),
+             ולכן מונה הסינון של טבלת אנשי הצוות והודעת סטטוס הטווח נכתבו שניהם לכאן
+             ודרסו זה את זה, והמונה שבתוך הכרטיס נשאר ריק לתמיד. -->
+        <span class="count" id="rRangeStatus"></span>
+      </div>
+    </div>
+    <div id="rangeHost" data-prefix="r"></div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/payments-config.js?v=20260918y"></script>
+<script>
+'use strict';
+const C = window.PAY_CONFIG;
+const nf0 = new Intl.NumberFormat('he-IL',{maximumFractionDigits:0});
+const nf1 = new Intl.NumberFormat('he-IL',{maximumFractionDigits:1});
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ------------------------------------------------------------------ Supabase
+async function rest(path, opts={}){
+  const tok = (window.APP_AUTH && APP_AUTH.accessToken) || C.SUPABASE_ANON_KEY;
+  const r = await fetch(`${C.SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers:{ apikey:C.SUPABASE_ANON_KEY, Authorization:`Bearer ${tok}`,
+              'Content-Type':'application/json', ...(opts.headers||{}) }});
+  if(!r.ok){
+    let msg = `${r.status} ${r.statusText}`;
+    try{ const j = await r.json(); if(j && j.message) msg = j.message; }catch(_){}
+    const e = new Error(msg); e.status = r.status; throw e;
+  }
+  return r;
+}
+// PostgREST מגביל תשובה ל-1000 שורות; חודש יומי לפי איש צוות עלול לעבור את זה.
+async function restAll(path){
+  const page = 1000; let from = 0; const out = [];
+  for(;;){
+    let r;
+    try{
+      r = await rest(path, { headers:{ 'Range-Unit':'items', Range:`${from}-${from+page-1}`, Prefer:'count=exact' } });
+    }catch(e){ if(e.status===416) break; throw e; }
+    const j = await r.json();
+    out.push(...j);
+    const total = Number((r.headers.get('content-range')||'').split('/')[1]);
+    if(j.length < page || (isFinite(total) && out.length >= total)) break;
+    from += page;
+  }
+  return out;
+}
+
+// ------------------------------------------------------------------ מודל
+const METHODS = [
+  {key:'credit_ern',          label:'ERN',              v:'--pm-ern'},
+  {key:'credit_regular',      label:'אשראי רגיל',       v:'--pm-regular'},
+  {key:'credit_grow',         label:'Grow',             v:'--pm-grow'},
+  {key:'bank_transfer',       label:'העברה בנקאית',     v:'--pm-transfer'},
+  {key:'cash',                label:'מזומן',            v:'--pm-cash'},
+  {key:'check',               label:"צ'קים",            v:'--pm-check'},
+  {key:'credit_other',        label:'אשראי — קוד אחר',  v:'--pm-other', optional:true},
+  {key:'credit_unclassified', label:'אשראי ללא פירוט',  v:'--pm-other', optional:true},
+];
+const SUMKEYS = ['n_receipts','n_ern','n_credit','total','cash','check','bank_transfer','credit',
+                 'credit_ern','credit_regular','credit_grow','credit_other','credit_unclassified',
+                 'pay_n','pay_sum','pay_ern_n','pay_ern_sum','pay_regular_n','pay_regular_sum','pay_grow_n','pay_grow_sum'];
+// כמות תשלומים: דליים להתפלגות (מספר תשלומים בקבלה)
+const PAY_BUCKETS = [[1,1,'תשלום אחד'],[2,3,'2–3'],[4,6,'4–6'],[7,12,'7–12'],[13,20,'13–20'],[21,24,'21–24'],[25,Infinity,'25+']];
+// סף מינימום (סכום אשראי בקבלה) לספירת תשלומים — rules.payment_settings.installments_min_credit
+let PAY_MIN = 3000;
+// מדרגות צבע לאחוז ERN — rules.payment_settings.ern_pct_warn / ern_pct_bad
+let ERN_WARN = 0.35, ERN_BAD = 0.45;
+// מכסת ERN — rules.payment_settings.ern_target_pct (סופר אדמין עורך מהאריח)
+let ERN_TARGET = 0.35;
+const ernCls = v => (v==null||!isFinite(v)) ? '' : (v < ERN_WARN ? 'pos' : (v < ERN_BAD ? 'warn' : 'neg'));
+const canWrite = () => !!(window.APP_AUTH && APP_AUTH.access && APP_AUTH.access.can_write);
+const tPct = () => `${(ERN_TARGET*100).toFixed(0)}%`;
+// המסר מול המכסה: מעל = חריגה · פחות מ-5 נקודות מתחת = זהירות · יותר = מעולה
+function ernStatus(v){
+  if(v==null||!isFinite(v)||!ERN_TARGET) return {cls:'', text:''};
+  const diff = (v - ERN_TARGET)*100;
+  if(diff > 0) return {cls:'neg', text:`⚠ יש חריגה של ${diff.toFixed(1)}% מעל מכסת ה-ERN (${tPct()})`};
+  const gap = -diff;
+  if(gap < 5) return {cls:'warn', text:`זהירות: אתה רק ${gap.toFixed(1)}% מתחת למכסת ה-ERN (${tPct()})`};
+  return {cls:'pos', text:`מעולה: אתה ${gap.toFixed(1)}% מתחת למכסת ה-ERN (${tPct()})`};
+}
+// עורך המכסה (סופר אדמין): "מכסה 35% ✎" — אותו רכיב באריח ובכרטיס הפילוח
+function ernTargetSetter(){
+  return `מכסת ERN <b>${tPct()}</b>` + (canWrite() ? ` <button class="pencil ern-edit" type="button" title="עריכת מכסת ה-ERN (סופר אדמין)">✎</button>` : '');
+}
+function bindErnEdit(root){
+  root.querySelectorAll('.ern-edit').forEach(b=>{ b.onclick = async ()=>{ const v = prompt('מכסת ERN באחוזים (למשל 35):', (ERN_TARGET*100).toFixed(0)); if(v===null) return; try{ await saveErnTarget(v); }catch(e){ alert('שמירה נכשלה: ' + e.message); } }; });
+}
+async function saveErnTarget(pctValue){
+  const v = Number(pctValue);
+  if(!isFinite(v) || v < 0 || v > 100){ alert('מכסת ERN חייבת להיות אחוז בין 0 ל-100'); return; }
+  await rest('rpc/set_payment_setting', { method:'POST', body: JSON.stringify({ p_key:'ern_target_pct', p_value: v/100 }) });
+  ERN_TARGET = v/100;
+  await (document.querySelector('#tabs button[aria-selected="true"]')?.dataset.tab === 'annual' ? renderAnnual() : renderMonth());
+}
+// סרגל עם סקאלה קבועה (לפחות עד המדרגה האדומה + מרווח) כדי שהסימונים יישבו במקום קבוע
+function ernMeter(v, scale){
+  const val = (v==null||!isFinite(v)) ? 0 : Math.max(0, v);
+  const w = Math.min(100, val/scale*100);
+  const cls = ernCls(v);
+  const mark = t => `<span class="mark" data-l="${(t*100).toFixed(0)}%" style="inset-inline-start:${(t/scale*100).toFixed(1)}%" title="מדרגה ${(t*100).toFixed(0)}%"></span>`;
+  // חוצץ המכסה — רק האחוז, בלי המילה "מכסה"; מדרגת צבע שנופלת על אותו ערך לא מצוירת פעמיים
+  const near = t => ERN_TARGET && Math.abs(t - ERN_TARGET) < 0.005;
+  const tmark = ERN_TARGET ? `<span class="mark target" data-l="${tPct()}" style="inset-inline-start:${(ERN_TARGET/scale*100).toFixed(1)}%" title="מכסת ERN ${tPct()}"></span>` : '';
+  return `<span class="ern"><span class="track"><span class="fill ${cls}" style="width:${w.toFixed(1)}%"></span>${near(ERN_WARN)?'':mark(ERN_WARN)}${near(ERN_BAD)?'':mark(ERN_BAD)}${tmark}</span><span class="pct ${cls}">${pct(v)}</span></span>`;
+}
+const DEPTS = {managers:'הנהלה', front:'ייעוצים פרונטליים', phone:'מתאמות פגישות', phone_ks:'מתאמות פגישות ק"ש',
+               phone_sikum:'מתאמות פגישות סיכום', phone_active:'מתאמות פגישות - אקטיב', office:'מנהלות משרד',
+               cosmetics:'מטפלות', mtl:'מת"ליות', mtl_active:'מת"ליות - אקטיב'};
+const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const hebMonth = m => { const d=new Date(m); return `${HEB_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+const shortMonth = m => { const d=new Date(m); return `${HEB_MONTHS[d.getUTCMonth()].slice(0,3)}׳${String(d.getUTCFullYear()).slice(2)}`; };
+const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return `${d.getUTCDate()}/${d.getUTCMonth()+1}`; };
+const fmtDateFull = iso => { if(!iso) return '—'; const d=new Date(iso); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+function money(v){ if(v==null||!isFinite(Number(v))) return {t:'—',c:'dash'}; const n=Number(v); return {t:`₪ ${nf0.format(Math.round(n))}`, c:n<0?'neg':''}; }
+function kfmt(v){
+  if(v==null||!isFinite(Number(v))) return '—';
+  const n=Number(v), a=Math.abs(n), s=n<0?'-':'';
+  if(a>=1e6) return `₪ ${s}${nf1.format(a/1e6)}M`;
+  if(a>=1e3) return `₪ ${s}${nf1.format(a/1e3)}K`;
+  return `₪ ${s}${nf0.format(a)}`;
+}
+function pct(v,d=1){ return (v==null||!isFinite(v)) ? '—' : `${(v*100).toFixed(d)}%`; }
+const cssVar = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function empty(){ const a={}; SUMKEYS.forEach(s=>a[s]=0); return a; }
+function agg(rows, keyFn, carry){
+  const m = new Map();
+  for(const r of rows){
+    const k = keyFn(r);
+    let a = m.get(k);
+    if(!a){ a = empty(); a.key = k; (carry||[]).forEach(c=>a[c]=r[c]); m.set(k,a); }
+    SUMKEYS.forEach(s=>{ a[s] += Number(r[s]||0); });
+  }
+  return [...m.values()].map(derive);
+}
+function derive(a){
+  a.ern_pct        = a.total  ? a.credit_ern / a.total  : null;
+  a.avg_receipt    = a.n_receipts ? a.total / a.n_receipts : null;
+  // ממוצע תשלומים לקבלת אשראי (קבלות בלבד, בלי זיכויים — כך גם בתצוגות)
+  a.avg_payments         = a.pay_n         ? a.pay_sum         / a.pay_n         : null;
+  a.avg_payments_ern     = a.pay_ern_n     ? a.pay_ern_sum     / a.pay_ern_n     : null;
+  a.avg_payments_regular = a.pay_regular_n ? a.pay_regular_sum / a.pay_regular_n : null;
+  a.avg_payments_grow    = a.pay_grow_n    ? a.pay_grow_sum    / a.pay_grow_n    : null;
+  return a;
+}
+const num1 = v => (v==null||!isFinite(v)) ? '—' : nf1.format(v);
+const activeMethods = rows => METHODS.filter(m => !m.optional || rows.some(r => Number(r[m.key]||0) !== 0));
+
+// ------------------------------------------------------------------ תבנית של "פרוסה" (חודש / טווח)
+function sliceHTML(p){
+  return `
+    <div class="tiles" id="${p}Tiles"></div>
+    <div class="card">
+      <h2>פילוח כל התקבולים לפי אופן תשלום <span class="note" id="${p}CompanyNote"></span></h2>
+      <div class="filterbar">
+        <span class="sub">אילו מחלקות לספור:</span>
+        <span class="dept-chips" id="${p}DeptChips"></span>
+        <button class="btn ghost" type="button" id="${p}DeptAll">הכול</button>
+        <button class="btn ghost" type="button" id="${p}DeptNone">נקה</button>
+        <span class="count" id="${p}DeptCount"></span>
+      </div>
+      <div class="chart-legend" id="${p}Legend"></div>
+      <div class="pm-body"><div class="pm-wrap"><div class="pm-track" id="${p}Track" role="img"></div><div class="pm-target hidden" id="${p}TargetMark"></div></div></div>
+      <div class="pm-target-note" id="${p}TargetNote"></div>
+      <table class="mini" id="${p}CompanyTable"><thead><tr><th>אופן תשלום</th><th>סכום</th><th>נתח</th><th>קבלות</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>לפי איש צוות <span class="sub" id="${p}ErnNote"></span><span class="note">ממוין לפי הכותרת שנבחרה · לחיצה על שורה פותחת את הקבלות</span></h2>
+      <div class="filterbar">
+        <label class="search-field" title="חיפוש">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input type="search" id="${p}Search" placeholder="שם…" autocomplete="off" />
+        </label>
+        <select id="${p}Dept" title="מחלקה"><option value="">כל המחלקות</option></select>
+        <button class="btn ghost" type="button" id="${p}Collapse" title="להציג רק את שורות הסיכום של המחלקות">כווץ הכול</button>
+        <button class="btn ghost" type="button" id="${p}Expand" title="להציג את כל אנשי הצוות">הרחב הכול</button>
+        <span class="count" id="${p}Count"></span>
+      </div>
+      <div class="scroll"><table id="${p}Grid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <details class="card fold" id="${p}Fold">
+      <summary>הקבלות של <span id="${p}Who">—</span> <span class="note" id="${p}FoldNote">בחר/י שורה בטבלה</span></summary>
+      <div class="err hidden" id="${p}FoldErr"></div>
+      <div class="scroll"><table id="${p}Rcpt"><thead></thead><tbody></tbody></table></div>
+    </details>
+    <div class="card">
+      <h2>כמות תשלומים <span class="note" id="${p}InstNote">מספר התשלומים בקבלת אשראי · עסקאות מ-3,000 ₪ ומעלה · קבלות בלבד, בלי זיכויים</span></h2>
+      <div class="tiles" id="${p}InstTiles" style="padding:16px 18px 0"></div>
+      <table class="mini" id="${p}Inst"><thead><tr><th>מספר תשלומים</th><th>קבלות</th><th>נתח מהקבלות</th><th>סכום אשראי</th><th>מתוכן ERN</th><th>מתוכן רגיל</th><th>מתוכן Grow</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="foot" id="${p}Foot"></div>`;
+}
+document.getElementById('tab-month').innerHTML = sliceHTML('m');
+document.getElementById('rangeHost').innerHTML = sliceHTML('r');
+
+const SLICE = { m:{rows:[], persons:[], sort:'total', dir:-1, from:null, to:null, collapsed:new Set(), deptSel:null},
+                r:{rows:[], persons:[], sort:'total', dir:-1, from:null, to:null, collapsed:new Set(), deptSel:null} };
+// כיווץ/הרחבה של קבוצות (מחלקות) בטבלה: לחיצה על שורת המחלקה, או כפתורי "כווץ/הרחב הכול"
+const caret = open => `<span class="caret" aria-hidden="true">${open ? '▾' : '◂'}</span> `;
+function bindGroupToggles(tbody, set, rerender){
+  tbody.addEventListener('click', e=>{
+    const g = e.target.closest('tr[data-group]'); if(!g) return;
+    const k = g.dataset.group;
+    if(set.has(k)) set.delete(k); else set.add(k);
+    rerender();
+  });
+}
+let CODES = null;
+let PREV_AGG = null;   // אגרגט החודש הקודם, ל"חודש שעבר" באריחים (נטען ב-renderMonth)
+
+// ------------------------------------------------------------------ רינדור פרוסה
+function renderSlice(p, rows, label){
+  const S = SLICE[p]; S.rows = rows;
+  const company = agg(rows, ()=>'all')[0] || derive(empty());
+  // מוחרגים (rules.payment_person_dept.exclude — למשל מי שמפיק רק זיכויים) נספרים
+  // בסה"כ החברה אבל לא מוצגים לפי אדם/מחלקה.
+  S.persons = agg(rows.filter(r=>!r.excluded), r=>r.person, ['person','dept_key']);
+  S.excludedNames = [...new Set(rows.filter(r=>r.excluded).map(r=>r.person))];
+  renderTiles(p, company, label);
+  renderCompany(p, rows);
+  renderInstallments(p, company);
+  renderPersons(p);
+  // כרטיסי "אימות מול ה-PDF" ו"מקרא קודים" הוסרו מהמסך (18/09/2026) — הכלים והטבלאות נשארו ב-DB ובסקריפטים.
+  document.getElementById(p+'Foot').textContent =
+    `${label} · ${nf0.format(company.n_receipts)} קבלות · ${S.persons.length} אנשי צוות` +
+    (S.excludedNames.length ? ` · סה״כ החברה כולל גם קבלות וזיכויים של מי שאינם מוצגים לפי אדם (${S.excludedNames.join(', ')})` : '');
+}
+
+// שורת "חודש שעבר" בתוך אריח. הדף הזה עצמאי ואינו טוען את js/ui.js, ולכן
+// העוזר משוכפל כאן בכוונה במקום לגרור את כל הספרייה.
+function prevLine(cur, prev, f){
+  if(prev === null || prev === undefined || !isFinite(Number(prev)))
+    return '<div class="prevline dash">אין נתון לחודש שעבר</div>';
+  const pv = Number(prev), cv = Number(cur)||0, diff = cv - pv;
+  const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : '';
+  const arrow = pv ? `${diff >= 0 ? '▲' : '▼'} ${(Math.abs(diff/pv)*100).toFixed(0)}%` : '';
+  return `<div class="prevline"><span class="lbl">חודש שעבר</span><b>${f(pv)}</b>` +
+         `${arrow ? ` <span class="${cls}">${arrow}</span>` : ''}</div>`;
+}
+
+function renderTiles(p, c, label){
+  // "חודש שעבר" מוצג רק בלשונית החודשית; בטווח תאריכים חופשי אין לזה משמעות.
+  const pv = (p === 'm' && PREV_AGG) ? PREV_AGG : null;
+  const tiles = [
+    ['סה״כ תקבולים',        kfmt(c.total),               `${nf0.format(c.n_receipts)} קבלות`, '', money(c.total).t, false, c.total, pv && pv.total],
+    // אחוז ERN וסכום ERN באריח אחד: האחוז הוא המדד, הסכום הוא ההקשר.
+    // המכנה הוא **כל** התקבולים — כולל קבלות של מתאמות הפגישות וזיכויים.
+    // שני חלקים בשני spans ולא מחרוזת אחת: כך האחוז נשאר מימין (נקרא ראשון) ואינו
+    // מתהפך בגלל סדר דו-כיווני של שתי מחרוזות מספריות.
+    ['ERN', `<span class="duo"><b>${pct(c.ern_pct)}</b><i>${kfmt(c.credit_ern)}</i></span>`,
+     (ernStatus(c.ern_pct).text || `${nf0.format(c.n_ern)} קבלות · מתוך כל התקבולים`) + `<span class="ern-target" data-p="${p}"></span>`,
+     ernStatus(c.ern_pct).cls || ernCls(c.ern_pct), `${nf0.format(c.n_ern)} קבלות ERN · ${money(c.credit_ern).t} מתוך ${money(c.total).t} — כל התקבולים, כולל קבלות של מתאמות פגישות וזיכויים · מכסת ERN ${tPct()}`, true,
+     c.credit_ern, pv && pv.credit_ern, true],
+    ['אשראי רגיל',           kfmt(c.credit_regular),      pct(c.total ? c.credit_regular/c.total : null)+' מהתקבולים', '', money(c.credit_regular).t, false, c.credit_regular, pv && pv.credit_regular],
+    ['לא אשראי',             kfmt(c.cash + c.check + c.bank_transfer), 'מזומן + צ׳קים + העברה', '', ''],
+    ['ממוצע תשלומים (מ-3,000 ₪)', num1(c.avg_payments), `ERN ${num1(c.avg_payments_ern)} · רגיל ${num1(c.avg_payments_regular)}`, '', `${nf0.format(c.pay_n)} קבלות אשראי מ-${nf0.format(PAY_MIN)} ₪ ומעלה`],
+  ];
+  document.getElementById(p+'Tiles').innerHTML = tiles.map(([k,v,m,cls,title,raw,cur,prev,rawM])=>
+    `<div class="tile ${cls==='neg'?'neg':cls==='warn'?'warn':cls==='pos'?'pos':''}"${title?` title="${esc(title)}"`:''}><div class="k">${esc(k)}</div><div class="v small ${cls}">${raw?v:esc(v)}</div><div class="m ${cls}">${rawM?m:esc(m)}</div>` +
+    `${prev===undefined?'':prevLine(cur, prev, kfmt)}</div>`).join('');
+  // מכסת ERN: מוצגת לכולם, נערכת רק ע"י סופר אדמין (עיפרון → אחוז)
+  document.querySelectorAll(`#${p}Tiles .ern-target`).forEach(el=>{ el.innerHTML = ' · ' + ernTargetSetter(); bindErnEdit(el); });
+}
+
+const deptName = k => k==='__none' ? 'ללא שיוך למחלקה' : (DEPTS[k]||k);
+function renderCompany(p, allRows){
+  const S = SLICE[p];
+  // בורר המחלקות: נבנה מהנתונים של הפרוסה; הבחירה נשמרת במעבר בין חודשים
+  const present = [...new Set(allRows.map(r=>r.dept_key||'__none'))];
+  const byDept = new Map(); allRows.forEach(r=>{ const k=r.dept_key||'__none'; byDept.set(k, (byDept.get(k)||0)+Number(r.total||0)); });
+  present.sort((a,b)=>(byDept.get(b)||0)-(byDept.get(a)||0));
+  if(!S.deptSel) S.deptSel = new Set(present);
+  const chips = document.getElementById(p+'DeptChips');
+  chips.innerHTML = present.map(k=>
+    `<label title="${esc(deptName(k))} · ${money(byDept.get(k)).t}"><input type="checkbox" value="${esc(k)}"${S.deptSel.has(k)?' checked':''}/>${esc(deptName(k))} <span class="sub">${kfmt(byDept.get(k))}</span></label>`).join('');
+  if(!chips.dataset.bound){
+    chips.dataset.bound = '1';
+    chips.addEventListener('change', e=>{ const i=e.target; if(!i||i.type!=='checkbox') return; if(i.checked) S.deptSel.add(i.value); else S.deptSel.delete(i.value); renderCompany(p, S.rows); });
+    document.getElementById(p+'DeptAll').addEventListener('click', ()=>{ S.deptSel = null; renderCompany(p, S.rows); });
+    document.getElementById(p+'DeptNone').addEventListener('click', ()=>{ S.deptSel = new Set(); renderCompany(p, S.rows); });
+  }
+  const rows = allRows.filter(r=>S.deptSel.has(r.dept_key||'__none'));
+  const c = agg(rows, ()=>'all')[0] || derive(empty());
+  const nSel = present.filter(k=>S.deptSel.has(k)).length;
+  document.getElementById(p+'DeptCount').textContent = nSel===present.length ? 'כל המחלקות' : (nSel ? `${nSel} מתוך ${present.length} מחלקות` : 'לא נבחרה מחלקה');
+  const ms = activeMethods(rows);
+  const posTotal = ms.reduce((a,m)=>a+Math.max(0,c[m.key]),0) || 1;
+  const counts = {};
+  ms.forEach(m=>{ counts[m.key] = rows.reduce((a,r)=>a+(Number(r[m.key]||0)!==0 ? 1 : 0), 0); });
+  // מקרא — תמיד נוכח כשיש יותר מסדרה אחת
+  document.getElementById(p+'Legend').innerHTML = ms.map(m=>
+    `<span><span class="sw" style="background:var(${m.v})"></span>${esc(m.label)}</span>`).join('');
+  // פס 100% — תווית בתוך קטע רק כשיש מקום; הערך המלא תמיד בטבלה שמתחת
+  document.getElementById(p+'Track').innerHTML = ms.map(m=>{
+    const v = Math.max(0, c[m.key]), share = v/posTotal;
+    if(share <= 0) return '';
+    const lbl = share >= 0.09 ? `<span>${esc(m.label)} ${pct(share,0)}</span>` : '';
+    return `<div class="seg" style="flex:${share.toFixed(4)} 1 0; background:var(${m.v})" title="${esc(m.label)} · ${money(c[m.key]).t} · ${pct(share)}">${lbl}</div>`;
+  }).join('');
+  const tm = document.getElementById(p+'TargetMark');
+  if(tm){ tm.classList.toggle('hidden', !ERN_TARGET); tm.style.insetInlineStart = `${(ERN_TARGET*100).toFixed(1)}%`; tm.dataset.l = `מכסת ERN ${tPct()}`; }
+  const tn = document.getElementById(p+'TargetNote');
+  if(tn){ const st = ernStatus(c.ern_pct); tn.innerHTML = `<span class="msg ${st.cls}">${st.text || ''}</span><span class="set">${ernTargetSetter()}</span>`; bindErnEdit(tn); }
+  document.getElementById(p+'Track').setAttribute('aria-label',
+    ms.map(m=>`${m.label} ${pct(Math.max(0,c[m.key])/posTotal)}`).join(', '));
+  document.getElementById(p+'CompanyNote').textContent = `סה״כ ${money(c.total).t}` + (nSel===present.length ? '' : ' · לפי המחלקות שנבחרו');
+  const tb = document.querySelector(`#${p}CompanyTable tbody`);
+  // הנתח מוצג כמספר וגם כגרף שמתמלא (הרוחב נקבע אחרי ההכנסה ל-DOM כדי שהמעבר ירוץ מ-0)
+  tb.innerHTML = ms.map(m=>{
+    const mv = money(c[m.key]);
+    const share = c.total ? c[m.key]/c.total : null;
+    const w = share==null ? 0 : Math.max(0, Math.min(100, share*100));
+    return `<tr><td><span class="pm-chip"><span class="sw" style="background:var(${m.v})"></span>${esc(m.label)}</span></td>` +
+           `<td class="num ${mv.c}">${mv.t}</td>` +
+           `<td><span class="fillbar"><span class="bar"><i data-w="${w.toFixed(1)}" style="--c:var(${m.v})"></i>${m.key==='credit_ern' && ERN_TARGET ? `<b class="tmark" style="inset-inline-start:${(ERN_TARGET*100).toFixed(1)}%" title="מכסת ERN ${tPct()}"></b>` : ''}</span><span class="pct">${pct(share)}</span></span></td>` +
+           `<td class="num">${nf0.format(counts[m.key]||0)}</td></tr>`;
+  }).join('') + `<tr class="rowband"><td>סה״כ</td><td class="num">${money(c.total).t}</td><td class="num">100%</td><td class="num">${nf0.format(c.n_receipts)}</td></tr>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ tb.querySelectorAll('.fillbar i[data-w]').forEach(i=>{ i.style.width = i.dataset.w + '%'; }); }));
+}
+
+// התפלגות מספר התשלומים לפרוסה — מתוך public.payment_installments (קבלות אשראי בלבד)
+async function renderInstallments(p, c){
+  const S = SLICE[p];
+  const tb = document.querySelector(`#${p}Inst tbody`);
+  const tiles = document.getElementById(p+'InstTiles');
+  tiles.innerHTML = [
+    ['ממוצע — כל האשראי', num1(c.avg_payments), `${nf0.format(c.pay_n)} קבלות`],
+    ['ממוצע — ERN', num1(c.avg_payments_ern), `${nf0.format(c.pay_ern_n)} קבלות`],
+    ['ממוצע — אשראי רגיל', num1(c.avg_payments_regular), `${nf0.format(c.pay_regular_n)} קבלות`],
+    ['ממוצע — Grow', num1(c.avg_payments_grow), `${nf0.format(c.pay_grow_n)} קבלות`],
+  ].map(([k,v,m])=>`<div class="tile"><div class="k">${esc(k)}</div><div class="v small">${esc(v)}</div><div class="m">${esc(m)}</div></div>`).join('');
+  tb.innerHTML = '<tr><td colspan="7" class="load">טוען…</td></tr>';
+  let rows;
+  try{ rows = await restAll(`payment_installments?select=credit_kind,payments,n,amount&issue_date=gte.${S.from}&issue_date=lte.${S.to}`); }
+  catch(e){ tb.innerHTML = `<tr><td colspan="7" class="err">${esc(e.message)}</td></tr>`; return; }
+  const B = PAY_BUCKETS.map(([lo,hi,label])=>({lo,hi,label,n:0,amount:0,ern:0,regular:0,grow:0}));
+  let totalN = 0;
+  rows.forEach(r=>{
+    const b = B.find(x=>r.payments>=x.lo && r.payments<=x.hi); if(!b) return;
+    const n = Number(r.n||0); b.n += n; totalN += n; b.amount += Number(r.amount||0);
+    if(r.credit_kind==='ern') b.ern += n; else if(r.credit_kind==='regular') b.regular += n; else if(r.credit_kind==='grow') b.grow += n;
+  });
+  const maxN = Math.max(1, ...B.map(b=>b.n));
+  tb.innerHTML = B.map(b=>{
+    const share = totalN ? b.n/totalN : 0;
+    return `<tr><td>${esc(b.label)}</td>` +
+      `<td><span class="meter"><span class="track"><span class="fill" style="width:${(b.n/maxN*100).toFixed(1)}%"></span></span><span class="pct">${nf0.format(b.n)}</span></span></td>` +
+      `<td class="num">${pct(share)}</td><td class="num">${money(b.amount).t}</td>` +
+      `<td class="num">${nf0.format(b.ern)}</td><td class="num">${nf0.format(b.regular)}</td><td class="num">${nf0.format(b.grow)}</td></tr>`;
+  }).join('') + `<tr class="rowband"><td>סה״כ</td><td class="num">${nf0.format(totalN)}</td><td class="num">100%</td>` +
+    `<td class="num">${money(B.reduce((a,b)=>a+b.amount,0)).t}</td><td class="num">${nf0.format(B.reduce((a,b)=>a+b.ern,0))}</td>` +
+    `<td class="num">${nf0.format(B.reduce((a,b)=>a+b.regular,0))}</td><td class="num">${nf0.format(B.reduce((a,b)=>a+b.grow,0))}</td></tr>`;
+}
+
+const PERSON_COLS = [
+  ['person','איש צוות','txt'], ['dept','מחלקה','txt'], ['n_receipts','קבלות','int'], ['total','סה״כ','money'],
+  ['credit_ern','ERN','money'], ['ern_pct','% ERN','meter'],
+  ['credit_regular','אשראי רגיל','money'], ['credit_grow','Grow','money'], ['bank_transfer','העברה','money'],
+  ['cash','מזומן','money'], ['check',"צ'קים",'money'], ['avg_payments','ממוצע תשלומים','paynum'], ['split','פילוח','split'],
+];
+function renderPersons(p){
+  const S = SLICE[p];
+  const q = (document.getElementById(p+'Search').value||'').trim();
+  const dept = document.getElementById(p+'Dept').value;
+  const ms = activeMethods(S.rows);
+  // בורר המחלקות נבנה מהנתונים, ולכן מנהל/ת מחלקה רואה רק את שלו/ה
+  const dsel = document.getElementById(p+'Dept');
+  const depts = [...new Set(S.persons.map(x=>x.dept_key).filter(Boolean))].sort((a,b)=>(DEPTS[a]||a).localeCompare(DEPTS[b]||b,'he'));
+  const keep = dsel.value;
+  dsel.innerHTML = '<option value="">כל המחלקות</option>' + depts.map(d=>`<option value="${esc(d)}">${esc(DEPTS[d]||d)}</option>`).join('')
+                 + (S.persons.some(x=>!x.dept_key) ? '<option value="__none">ללא שיוך למחלקה</option>' : '');
+  dsel.value = [...dsel.options].some(o=>o.value===keep) ? keep : '';
+
+  let list = S.persons.filter(x => (!q || x.person.includes(q)) && (!dept || (dept==='__none' ? !x.dept_key : x.dept_key===dept)));
+  const sk = S.sort;
+  list.sort((a,b)=>{
+    const va = sk==='person' ? a.person : (sk==='dept' ? (DEPTS[a.dept_key]||'') : a[sk]);
+    const vb = sk==='person' ? b.person : (sk==='dept' ? (DEPTS[b.dept_key]||'') : b[sk]);
+    if(typeof va==='string') return S.dir * va.localeCompare(vb,'he');
+    return S.dir * ((va==null?-Infinity:va) - (vb==null?-Infinity:vb));
+  });
+  document.getElementById(p+'Count').textContent = `${list.length} מתוך ${S.persons.length}`;
+
+  const th = document.querySelector(`#${p}Grid thead`);
+  th.innerHTML = '<tr>' + PERSON_COLS.map(([k,l])=>
+    `<th data-sort="${k}" class="${k===S.sort?'on':''}">${esc(l)}</th>`).join('') + '</tr>';
+  th.onclick = e => {
+    const h = e.target.closest('th[data-sort]'); if(!h) return;
+    const k = h.dataset.sort;
+    if(S.sort===k) S.dir = -S.dir; else { S.sort = k; S.dir = (k==='person'||k==='dept') ? 1 : -1; }
+    renderPersons(p);
+  };
+  // סקאלה קבועה לסרגל: לפחות המדרגה האדומה + 15 נקודות, או הערך הגבוה ביותר בטבלה
+  const scale = Math.max(ERN_BAD + 0.15, ...list.map(x=>x.ern_pct||0)) ;
+  const tb = document.querySelector(`#${p}Grid tbody`);
+  if(!list.length){ tb.innerHTML = '<tr><td colspan="13" class="dash">אין שורות</td></tr>'; return; }
+  // שורת סיכום — למחלקה (group) ולסה"כ (rowband)
+  const sumRow = (label, t, cls, extra, attrs) =>
+    `<tr class="${cls}"${attrs||''}><td>${label}</td><td>${extra||'—'}</td><td class="num">${nf0.format(t.n_receipts)}</td><td class="num">${money(t.total).t}</td>` +
+    `<td class="num">${money(t.credit_ern).t}</td><td class="ern-cell">${ernMeter(t.ern_pct, scale)}</td>` +
+    `<td class="num">${money(t.credit_regular).t}</td><td class="num">${money(t.credit_grow).t}</td><td class="num">${money(t.bank_transfer).t}</td>` +
+    `<td class="num">${money(t.cash).t}</td><td class="num">${money(t.check).t}</td><td class="num">${num1(t.avg_payments)}</td><td></td></tr>`;
+  // חלוקה למחלקות: המחלקה שהכניסה הכי הרבה כסף למעלה; בתוך מחלקה — לפי המיון שנבחר
+  const groups = new Map();
+  list.forEach(x=>{ const k = x.dept_key||'__none'; if(!groups.has(k)) groups.set(k, []); groups.get(k).push(x); });
+  const gl = [...groups.entries()].map(([k,items])=>({k, items, t: agg(items, ()=>'all')[0]})).sort((a,b)=>b.t.total-a.t.total);
+  const grand = agg(list, ()=>'all')[0];
+  const personRow = x=>{
+    const cells = PERSON_COLS.map(([k,,kind])=>{
+      if(kind==='txt') return `<td>${esc(k==='person' ? x.person : (DEPTS[x.dept_key]||(x.dept_key?x.dept_key:'—')))}</td>`;
+      if(kind==='int') return `<td class="num">${nf0.format(x[k])}</td>`;
+      if(kind==='paynum') return `<td class="num" title="ERN ${num1(x.avg_payments_ern)} · רגיל ${num1(x.avg_payments_regular)} · Grow ${num1(x.avg_payments_grow)} · ${nf0.format(x.pay_n)} קבלות אשראי">${num1(x.avg_payments)}</td>`;
+      if(kind==='money'){ const m=money(x[k]); return `<td class="num ${m.c}">${m.t}</td>`; }
+      if(kind==='pct') return `<td class="num">${pct(x[k])}</td>`;
+      if(kind==='meter') return `<td class="ern-cell">${ernMeter(x.ern_pct, scale)}</td>`;
+      // פילוח מיני — צבע לפי אופן תשלום, רווח 2px; הערכים המדויקים בעמודות משמאל
+      const tot = ms.reduce((a,m)=>a+Math.max(0,x[m.key]),0) || 1;
+      const segs = ms.map(m=>{ const s=Math.max(0,x[m.key])/tot; return s>0 ? `<i style="flex:${s.toFixed(4)} 1 0;background:var(${m.v})" title="${esc(m.label)} ${pct(s)}"></i>` : ''; }).join('');
+      return `<td><span class="pm-mini">${segs}</span></td>`;
+    }).join('');
+    return `<tr class="clickable" data-person="${esc(x.person)}" title="לחיצה לפתיחת הקבלות">${cells}</tr>`;
+  };
+  tb.innerHTML = gl.map((g,i)=>{
+    const name = g.k==='__none' ? 'ללא שיוך למחלקה' : (DEPTS[g.k]||g.k);
+    const share = grand.total ? g.t.total/grand.total : null;
+    const open = !S.collapsed.has(g.k);
+    return sumRow(`${caret(open)}${i+1}. ${esc(name)}`, g.t, 'group dept', `${g.items.length} · ${pct(share,0)} מההכנסות`,
+                  ` data-group="${esc(g.k)}" title="${open ? 'לחיצה לכיווץ המחלקה' : 'לחיצה להרחבת המחלקה'}"`) +
+           (open ? g.items.map(personRow).join('') : '');
+  }).join('') + sumRow('סה״כ', grand, 'rowband');
+  if(!tb.dataset.bound){
+    tb.dataset.bound = '1';
+    bindGroupToggles(tb, S.collapsed, ()=>renderPersons(p));
+    tb.addEventListener('click', e=>{ const tr = e.target.closest('tr[data-person]'); if(tr) openReceipts(p, tr.dataset.person); });
+    document.getElementById(p+'Collapse').addEventListener('click', ()=>{ SLICE[p].persons.forEach(x=>S.collapsed.add(x.dept_key||'__none')); renderPersons(p); });
+    document.getElementById(p+'Expand').addEventListener('click', ()=>{ S.collapsed.clear(); renderPersons(p); });
+  }
+}
+
+async function openReceipts(p, person){
+  const S = SLICE[p];
+  const fold = document.getElementById(p+'Fold');
+  document.getElementById(p+'Who').textContent = person;
+  document.getElementById(p+'FoldNote').textContent = 'טוען…';
+  fold.open = true;
+  const err = document.getElementById(p+'FoldErr'); err.classList.add('hidden');
+  const tb = document.querySelector(`#${p}Rcpt tbody`);
+  document.querySelector(`#${p}Rcpt thead`).innerHTML =
+    '<tr><th>תאריך</th><th>מסמך</th><th>לקוחה</th><th>סה״כ</th><th>אופן תשלום</th><th>ERN</th><th>תשלומים</th><th>קוד</th><th>PDF</th></tr>';
+  tb.innerHTML = '<tr><td colspan="9" class="load">טוען…</td></tr>';
+  let rows;
+  try{
+    rows = await restAll(`payment_methods_receipts?person=eq.${encodeURIComponent(person)}&issue_date=gte.${S.from}&issue_date=lte.${S.to}&order=issue_date.desc,doc_number.desc`);
+  }catch(e){ err.classList.remove('hidden'); err.textContent = `טעינה נכשלה: ${e.message}`; tb.innerHTML=''; return; }
+  const ms = METHODS;
+  tb.innerHTML = rows.map(r=>{
+    const chips = ms.filter(m=>Number(r[m.key]||0)!==0).map(m=>
+      `<span class="pm-chip"><span class="sw" style="background:var(${m.v})"></span>${esc(m.label)} ${money(r[m.key]).t}</span>`).join('');
+    const pdf = r.pdf_checked_at==null ? '<span class="dash">—</span>'
+              : (r.pdf_matches===true ? '<span class="pos" title="ה-PDF תואם לקוד">✓</span>'
+              : (r.pdf_matches===false ? `<span class="neg" title="ה-PDF אומר ${esc(r.pdf_kind)}">✗</span>` : '<span class="warn" title="לא זוהה ב-PDF">?</span>'));
+    const doc = `${esc(r.doc_number||'')}${r.doc_type_id===46 ? ' <span class="dash">(זיכוי)</span>' : ''}`;
+    const tv = money(r.total), ev = money(r.credit_ern);
+    return `<tr><td>${fmtDateFull(r.issue_date)}</td><td class="num">${doc}</td><td>${esc(r.client_name_raw||'—')}</td>` +
+           `<td class="num ${tv.c}">${tv.t}</td><td style="text-align:start">${chips||'<span class="dash">—</span>'}</td>` +
+           `<td class="num ${ev.c}">${Number(r.credit_ern)?ev.t:'<span class="dash">—</span>'}</td>` +
+           `<td class="num">${r.credit_num_payments ?? '—'}${r.credit_manual?' <span class="dash" title="סליקה ידנית">י</span>':''}</td>` +
+           `<td class="num">${esc(r.credit_card_code ?? '—')}</td><td>${pdf}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="dash">אין קבלות בטווח</td></tr>';
+  const t = derive(rows.reduce((a,r)=>{
+    SUMKEYS.forEach(k=>{ if(k in r) a[k]+=Number(r[k]||0); }); a.n_receipts++;
+    if(r.doc_type_id===24 && Number(r.credit_num_payments)>0 && Number(r.credit)>=PAY_MIN){ a.pay_n++; a.pay_sum+=Number(r.credit_num_payments); }
+    return a; }, empty()));
+  document.getElementById(p+'FoldNote').textContent =
+    `${rows.length} קבלות · ${money(t.total).t} · ERN ${money(t.credit_ern).t} (${pct(t.ern_pct)}) · ממוצע תשלומים ${num1(t.avg_payments)}`;
+}
+
+async function renderPdf(p){
+  const S = SLICE[p], el = document.getElementById(p+'Pdf');
+  try{
+    const rows = await restAll(`payment_pdf_checks_summary?period_month=gte.${S.from.slice(0,7)}-01&period_month=lte.${S.to.slice(0,7)}-01`);
+    const t = rows.reduce((a,r)=>{ ['n_checked','n_match','n_mismatch','n_unknown'].forEach(k=>a[k]+=Number(r[k]||0)); if(!a.last||r.last_checked_at>a.last) a.last=r.last_checked_at; return a; }, {n_checked:0,n_match:0,n_mismatch:0,n_unknown:0,last:null});
+    el.innerHTML = t.n_checked
+      ? `<span>נבדקו <b>${nf0.format(t.n_checked)}</b> קבלות</span><span class="pos">תואמות <b>${nf0.format(t.n_match)}</b></span>` +
+        `<span class="${t.n_mismatch?'neg':''}">לא תואמות <b>${nf0.format(t.n_mismatch)}</b></span><span>לא זוהו ב-PDF <b>${nf0.format(t.n_unknown)}</b></span>` +
+        `<span class="dash">בדיקה אחרונה ${t.last ? new Date(t.last).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</span>`
+      : '<span class="dash">עדיין לא נבדקו קבלות מול ה-PDF בטווח הזה.</span>';
+  }catch(e){ el.innerHTML = `<span class="dash">${esc(e.message)}</span>`; }
+}
+async function renderCodes(p){
+  const tb = document.querySelector(`#${p}Codes tbody`);
+  try{
+    if(!CODES) CODES = await (await rest('payment_credit_codes?order=code')).json();
+    const kindLbl = {ern:'ERN', regular:'אשראי רגיל', grow:'Grow', other:'אחר'};
+    const kindVar = {ern:'--pm-ern', regular:'--pm-regular', grow:'--pm-grow', other:'--pm-other'};
+    tb.innerHTML = CODES.map(c=>`<tr><td class="num">${esc(c.code)}</td><td><span class="pm-chip"><span class="sw" style="background:var(${kindVar[c.kind]||'--pm-other'})"></span>${esc(kindLbl[c.kind]||c.kind)}</span></td><td>${esc(c.label)}</td></tr>`).join('')
+      + '<tr><td class="dash">אחר</td><td colspan="2" class="dash">קוד שאינו בטבלה נספר כ"אשראי — קוד אחר" ואינו מנוחש</td></tr>';
+  }catch(e){ tb.innerHTML = `<tr><td class="dash">${esc(e.message)}</td></tr>`; }
+}
+
+// ------------------------------------------------------------------ טעינת חודש
+let MONTH = null, MONTHS = [];
+async function loadMonths(){
+  try{
+    const st = await (await rest('payment_settings')).json();
+    const g = k => { const r = (st||[]).find(x=>x.key===k); return r && isFinite(Number(r.value)) ? Number(r.value) : null; };
+    PAY_MIN  = g('installments_min_credit') ?? PAY_MIN;
+    ERN_WARN = g('ern_pct_warn') ?? ERN_WARN;
+    ERN_BAD  = g('ern_pct_bad')  ?? ERN_BAD;
+    ERN_TARGET = g('ern_target_pct') ?? ERN_TARGET;
+  }catch(_){ /* ברירות המחדל נשארות */ }
+  document.querySelectorAll('[id$="ErnNote"]').forEach(el=>{ el.textContent = `מכסת ERN ${tPct()} · ירוק עד ${(ERN_WARN*100).toFixed(0)}% · כתום ${(ERN_WARN*100).toFixed(0)}–${(ERN_BAD*100).toFixed(0)}% · אדום מעל ${(ERN_BAD*100).toFixed(0)}%`; });
+  document.querySelectorAll('[id$="InstNote"]').forEach(el=>{ el.textContent = `מספר התשלומים בקבלת אשראי · עסקאות מ-${nf0.format(PAY_MIN)} ₪ ומעלה · קבלות בלבד, בלי זיכויים`; });
+  const rows = await restAll('payment_methods_monthly?select=period_month,last_date&order=period_month.desc');
+  const seen = new Map();
+  rows.forEach(r=>{ if(!seen.has(r.period_month) || r.last_date > seen.get(r.period_month)) seen.set(r.period_month, r.last_date); });
+  MONTHS = [...seen.keys()];
+  const sel = document.getElementById('month');
+  sel.innerHTML = MONTHS.map(m=>`<option value="${m}">${hebMonth(m)}</option>`).join('');
+  sel.onchange = ()=>{ MONTH = sel.value; renderMonth(); if(onTab('annual')) renderAnnual(); };
+  if(!MONTHS.length){ document.getElementById('mTiles').innerHTML='<div class="err">אין נתוני קבלות ב-Supabase.</div>'; return; }
+  MONTH = MONTHS[0];
+  document.getElementById('asof').textContent = `עדכני ל-${fmtDateFull(seen.get(MONTH))}`;
+  await renderMonth();
+}
+async function renderMonth(){
+  const S = SLICE.m;
+  const d = new Date(MONTH+'T00:00:00Z');
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 0));
+  S.from = MONTH; S.to = last.toISOString().slice(0,10);
+  const host = document.getElementById('tab-month'); host.style.opacity = '.55';
+  try{
+    const prevM = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()-1, 1)).toISOString().slice(0,10);
+    const [rows, prevRows] = await Promise.all([
+      restAll(`payment_methods_daily?period_month=eq.${MONTH}&order=issue_date`),
+      restAll(`payment_methods_daily?period_month=eq.${prevM}`).catch(()=>[]),
+    ]);
+    PREV_AGG = (prevRows && prevRows.length) ? agg(prevRows, ()=>'all')[0] : null;
+    renderSlice('m', rows, hebMonth(MONTH));
+  }catch(e){ document.getElementById('mTiles').innerHTML = `<div class="err">שגיאת טעינה: ${esc(e.message)}</div>`; }
+  host.style.opacity = '';
+}
+['m','r'].forEach(p=>{
+  document.getElementById(p+'Search').addEventListener('input', ()=>renderPersons(p));
+  document.getElementById(p+'Dept').addEventListener('change', ()=>renderPersons(p));
+});
+
+// ------------------------------------------------------------------ טווח תאריכים
+function preset(kind){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let from = new Date(today), to = new Date(today);
+  if(kind==='week') from.setDate(today.getDate()-6);
+  else if(kind==='30') from.setDate(today.getDate()-29);
+  else if(kind==='90') from.setDate(today.getDate()-89);
+  else if(kind==='q'){ from = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1); }
+  else if(kind==='ytd'){ from = new Date(today.getFullYear(), 0, 1); }
+  document.getElementById('rFrom').value = iso(from);
+  document.getElementById('rTo').value = iso(to);
+  renderRange();
+}
+document.getElementById('rPresets').addEventListener('click', e=>{ const b=e.target.closest('[data-preset]'); if(b) preset(b.dataset.preset); });
+document.getElementById('rApply').addEventListener('click', renderRange);
+async function renderRange(){
+  const S = SLICE.r;
+  const f = document.getElementById('rFrom').value, t = document.getElementById('rTo').value;
+  if(!f || !t || t < f){ document.getElementById('rRangeStatus').textContent = 'יש לבחור טווח תקין'; return; }
+  S.from = f; S.to = t;
+  document.getElementById('rRangeStatus').textContent = 'טוען…';
+  const host = document.getElementById('rangeHost'); host.style.opacity = '.55';
+  try{
+    const rows = await restAll(`payment_methods_daily?issue_date=gte.${f}&issue_date=lte.${t}&order=issue_date`);
+    renderSlice('r', rows, `${fmtDateFull(f)} – ${fmtDateFull(t)}`);
+    const days = new Set(rows.map(r=>r.issue_date)).size;
+    document.getElementById('rRangeStatus').textContent = `${days} ימי פעילות בטווח`;
+  }catch(e){ document.getElementById('rTiles').innerHTML = `<div class="err">שגיאת טעינה: ${esc(e.message)}</div>`; document.getElementById('rRangeStatus').textContent=''; }
+  host.style.opacity = '';
+}
+
+// ------------------------------------------------------------------ טאבים
+const TABS = ['month','annual','range'];
+const onTab = t => !!document.querySelector(`#tabs button[data-tab="${t}"][aria-selected="true"]`);
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-tab]'); if(!b) return;
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.setAttribute('aria-selected', String(x===b)));
+  TABS.forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+  if(b.dataset.tab==='annual') renderAnnual();
+  if(b.dataset.tab==='range' && !SLICE.r.rows.length && !document.getElementById('rFrom').value) preset('30');
+});
+
+// =========================================================================== //
+// השוואה שנתית — מ-public.payment_methods_monthly (שורה לחודש ולאיש צוות)
+// =========================================================================== //
+const ANN_METRICS = [
+  ['ern_pct',        '% ERN מהתקבולים',  'pct'],
+  ['credit_ern',     'ERN ₪',            'money'],
+  ['total',          'סה״כ תקבולים',     'money'],
+  ['credit_regular', 'אשראי רגיל ₪',     'money'],
+  ['credit_grow',    'Grow ₪',           'money'],
+  ['bank_transfer',  'העברה בנקאית ₪',   'money'],
+  ['cash',           'מזומן ₪',          'money'],
+  ['n_ern',          'מספר קבלות ERN',   'int'],
+  ['avg_payments',         'ממוצע תשלומים — כל האשראי', 'num'],
+  ['avg_payments_ern',     'ממוצע תשלומים — ERN',       'num'],
+  ['avg_payments_regular', 'ממוצע תשלומים — רגיל',      'num'],
+];
+const ANN_ROWS = [
+  ['total','סה״כ תקבולים','money',true], ['credit_ern','ERN','money',true], ['ern_pct','% ERN מהתקבולים','pct',true],
+  ['credit','אשראי (כולל)','money'], ['credit_regular','אשראי רגיל','money'],
+  ['credit_grow','Grow','money'], ['bank_transfer','העברה בנקאית','money'], ['cash','מזומן','money'], ['check',"צ'קים",'money'],
+  ['n_receipts','קבלות','int'], ['n_ern','קבלות ERN','int'], ['avg_receipt','ממוצע לקבלה','money'],
+  ['avg_payments','ממוצע תשלומים — כל האשראי','num',true], ['avg_payments_ern','ממוצע תשלומים — ERN','num'],
+  ['avg_payments_regular','ממוצע תשלומים — רגיל','num'], ['avg_payments_grow','ממוצע תשלומים — Grow','num'],
+];
+let ANN = null;
+function fmtKind(v, kind){
+  if(v==null||!isFinite(Number(v))) return {t:'—',c:'dash'};
+  if(kind==='pct') return {t:pct(v), c:''};
+  if(kind==='int') return {t:nf0.format(v), c:''};
+  if(kind==='num') return {t:nf1.format(v), c:''};
+  return money(v);
+}
+async function renderAnnual(){
+  const body = document.querySelector('#annGrid tbody');
+  if(!ANN){
+    body.innerHTML = '<tr><td class="load">טוען…</td></tr>';
+    try{
+      const rows = await restAll('payment_methods_monthly?order=period_month');
+      const months = [...new Set(rows.map(r=>r.period_month))].sort();
+      const today = new Date(); const curM = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+      const company = agg(rows, r=>r.period_month).sort((a,b)=>a.key.localeCompare(b.key));
+      company.forEach(c=>{ c.is_open = c.key >= curM; });
+      const persons = agg(rows.filter(r=>!r.excluded), r=>r.person, ['person','dept_key']).sort((a,b)=>b.total-a.total);
+      const byPM = new Map(); rows.forEach(r=>byPM.set(r.person+'|'+r.period_month, derive({...r})));
+      ANN = {rows, months, company, persons, byPM, collapsed:new Set()};
+      const atb = document.querySelector('#annPersons tbody');
+      bindGroupToggles(atb, ANN.collapsed, renderAnnualPersons);
+      document.getElementById('annCollapse').addEventListener('click', ()=>{ ANN.persons.forEach(x=>ANN.collapsed.add(x.dept_key||'__none')); renderAnnualPersons(); });
+      document.getElementById('annExpand').addEventListener('click', ()=>{ ANN.collapsed.clear(); renderAnnualPersons(); });
+      const ps = document.getElementById('annPerson');
+      ps.innerHTML = '<option value="">כל החברה</option>' + persons.map(x=>`<option value="${esc(x.person)}">${esc(x.person)}</option>`).join('');
+      ps.onchange = drawAnnualChart;
+      const ms = document.getElementById('annMetric');
+      ms.innerHTML = ANN_METRICS.map(m=>`<option value="${m[0]}">${esc(m[1])}</option>`).join('');
+      ms.onchange = drawAnnualChart;
+      document.getElementById('annSearch').addEventListener('input', renderAnnualPersons);
+      document.getElementById('annPersonMetric').addEventListener('change', renderAnnualPersons);
+    }catch(e){ body.innerHTML = `<tr><td class="err">שגיאת טעינה: ${esc(e.message)}</td></tr>`; return; }
+  }
+  renderAnnualTiles(); renderAnnualGrid(); renderAnnualPersons(); drawAnnualChart();
+  const open = ANN.company.filter(c=>c.is_open).length;
+  document.getElementById('annFoot').textContent =
+    `${ANN.months.length} חודשים · ${hebMonth(ANN.months[0])} – ${hebMonth(ANN.months[ANN.months.length-1])}` +
+    (open ? ` · ${open} חודש פתוח (חלקי, מסומן ב-•)` : '') + ' · מקור: public.payment_methods_monthly.';
+}
+function renderAnnualTiles(){
+  const cs = ANN.company, t = derive(cs.reduce((a,c)=>{ SUMKEYS.forEach(k=>a[k]+=c[k]); return a; }, empty()));
+  const closed = cs.filter(c=>!c.is_open);
+  const best = [...closed].sort((a,b)=>(b.ern_pct||0)-(a.ern_pct||0))[0];
+  const lastC = closed[closed.length-1], prevC = closed[closed.length-2];
+  const delta = (lastC && prevC && lastC.ern_pct!=null && prevC.ern_pct!=null) ? lastC.ern_pct - prevC.ern_pct : null;
+  document.getElementById('annTiles').innerHTML = [
+    ['סה״כ תקבולים', kfmt(t.total), `${cs.length} חודשים`, ''],
+    ['ERN מצטבר', kfmt(t.credit_ern), `${nf0.format(t.n_ern)} קבלות`, ''],
+    ['% ERN מהתקבולים', pct(t.ern_pct), 'לכל התקופה', ''],
+    ['החודש החזק ב-ERN', best ? hebMonth(best.key) : '—', best ? `${pct(best.ern_pct)} · ${kfmt(best.credit_ern)}` : 'רק חודשים סגורים', ''],
+    ['שינוי בחודש הסגור האחרון', delta==null ? '—' : `${delta>0?'+':''}${(delta*100).toFixed(1)} נק׳`, lastC && prevC ? `${shortMonth(lastC.key)} מול ${shortMonth(prevC.key)}` : '', delta==null?'':(delta>=0?'pos':'neg')],
+    ['ממוצע חודשי ERN', kfmt(closed.length ? closed.reduce((a,c)=>a+c.credit_ern,0)/closed.length : null), 'חודשים סגורים', ''],
+  ].map(([k,v,m,c])=>`<div class="tile"><div class="k">${esc(k)}</div><div class="v small ${c}">${esc(v)}</div><div class="m">${esc(m)}</div></div>`).join('');
+}
+function renderAnnualGrid(){
+  const cols = [...ANN.company];   // מימין לשמאל: החודש הראשון מימין
+  document.querySelector('#annGrid thead').innerHTML = '<tr><th>מדד</th>' + cols.map(c=>
+    `<th class="${c.key===MONTH?'selmonth':''}"${c.is_open?' title="חודש פתוח — חלקי"':''}><div>${hebMonth(c.key)}${c.is_open?' •':''}</div><div class="metric">${nf0.format(c.n_receipts)} קבלות</div></th>`).join('') + '</tr>';
+  document.querySelector('#annGrid tbody').innerHTML = ANN_ROWS.map(([k,l,kind,band])=>
+    `<tr class="${band?'rowband':''}"><td>${esc(l)}</td>` + cols.map(c=>{ const f=fmtKind(c[k],kind); return `<td class="num ${f.c} ${c.key===MONTH?'selmonth':''}">${f.t}</td>`; }).join('') + '</tr>').join('');
+}
+function renderAnnualPersons(){
+  const q = (document.getElementById('annSearch').value||'').trim();
+  const metric = document.getElementById('annPersonMetric').value;
+  const kind = metric.startsWith('ern_pct') ? 'pct' : (metric.startsWith('avg_payments') ? 'num' : 'money');
+  const cols = [...ANN.months];
+  const list = ANN.persons.filter(x=>!q || x.person.includes(q));
+  document.getElementById('annCount').textContent = `${list.length} מתוך ${ANN.persons.length}`;
+  document.querySelector('#annPersons thead').innerHTML = '<tr><th>איש צוות</th><th>לכל התקופה</th>' +
+    cols.map(m=>`<th class="${m===MONTH?'selmonth':''}">${shortMonth(m)}</th>`).join('') + '</tr>';
+  const cellFor = (r, who) => {
+    const f = fmtKind(r[metric], kind);
+    if(metric==='ern_pct') f.c = ernCls(r[metric]);   // אותן מדרגות צבע כמו בסרגל
+    return `<td class="num ${f.c}" title="${esc(who)} · ${hebMonth(r.key||r.period_month)} · סה״כ ${money(r.total).t} · ERN ${money(r.credit_ern).t} (${pct(r.ern_pct)}) · ${nf0.format(r.n_receipts)} קבלות · ממוצע תשלומים ${num1(r.avg_payments)}">${f.t}</td>`;
+  };
+  const rowFor = (label, total, byMonth, who, cls, attrs) => {
+    const cells = cols.map(m=>{ const r = byMonth.get(m); return r ? cellFor(r, who).replace('class="num', `class="num ${m===MONTH?'selmonth':''}`) : `<td class="dash ${m===MONTH?'selmonth':''}">—</td>`; }).join('');
+    const tf = fmtKind(total[metric], kind);
+    if(metric==='ern_pct') tf.c = ernCls(total[metric]);
+    return `<tr class="${cls||''}"${attrs||''}><td>${label}</td><td class="num ${tf.c}" style="font-weight:800">${tf.t}</td>${cells}</tr>`;
+  };
+  // חלוקה למחלקות — המחלקה שהכניסה הכי הרבה כסף בכל התקופה למעלה
+  const groups = new Map();
+  list.forEach(x=>{ const k = x.dept_key||'__none'; if(!groups.has(k)) groups.set(k, []); groups.get(k).push(x); });
+  const grand = agg(list, ()=>'all')[0];
+  const gl = [...groups.entries()].map(([k,items])=>{
+    const names = new Set(items.map(x=>x.person));
+    const rowsOf = ANN.rows.filter(r=>names.has(r.person) && !r.excluded);
+    const byMonth = new Map(agg(rowsOf, r=>r.period_month).map(a=>[a.key, a]));
+    return {k, items, t: agg(items, ()=>'all')[0], byMonth};
+  }).sort((a,b)=>b.t.total-a.t.total);
+  document.querySelector('#annPersons tbody').innerHTML = gl.map((g,i)=>{
+    const name = g.k==='__none' ? 'ללא שיוך למחלקה' : (DEPTS[g.k]||g.k);
+    const share = grand.total ? g.t.total/grand.total : null;
+    const open = !ANN.collapsed.has(g.k);
+    return rowFor(`${caret(open)}${i+1}. ${esc(name)} <span class="sub">· ${g.items.length} · ${pct(share,0)} מההכנסות</span>`, g.t, g.byMonth, name, 'group dept',
+                  ` data-group="${esc(g.k)}" title="${open ? 'לחיצה לכיווץ המחלקה' : 'לחיצה להרחבת המחלקה'}"`) +
+      (open ? g.items.map(x=>{
+        const byMonth = new Map(ANN.months.map(m=>[m, ANN.byPM.get(x.person+'|'+m)]).filter(([,r])=>r));
+        return rowFor(esc(x.person), x, byMonth, x.person, '');
+      }).join('') : '');
+  }).join('') + (list.length ? rowFor('סה״כ', grand, new Map(ANN.company.map(c=>[c.key, c])), 'כל החברה', 'rowband') : '<tr><td class="dash">אין שורות</td></tr>');
+}
+
+// --------------------------------------------------------------- גרף קווי
+function niceTicks(min, max, n=5){
+  if(max===min){ max = min + 1; }
+  const span = max - min, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(x=>x*mag).find(s=>span/s <= n) || 10*mag;
+  const lo = Math.floor(min/step)*step, hi = Math.ceil(max/step)*step;
+  const ticks = []; for(let v=lo; v<=hi+step/2; v+=step) ticks.push(+v.toFixed(10));
+  return {lo, hi, ticks};
+}
+function drawAnnualChart(){
+  if(!ANN) return;
+  const key = document.getElementById('annMetric').value;
+  const meta = ANN_METRICS.find(m=>m[0]===key), kind = meta[2];
+  const who = document.getElementById('annPerson').value;
+  const host = document.getElementById('annChart');
+  const months = ANN.months;
+  const series = [];
+  const compPts = months.map(m=>{ const c=ANN.company.find(x=>x.key===m); return {m, v: c ? c[key] : null, open: c ? c.is_open : false}; });
+  if(who){
+    const pts = months.map(m=>{ const r=ANN.byPM.get(who+'|'+m); return {m, v: r ? r[key] : null, open: compPts.find(p=>p.m===m).open}; });
+    series.push({name:who, pts, color:cssVar('--pm-ern'), cls:''});
+    series.push({name:'כל החברה', pts:compPts, color:cssVar('--muted'), cls:'ref'});
+  } else series.push({name:'כל החברה', pts:compPts, color:cssVar('--pm-ern'), cls:''});
+  if(key==='ern_pct' && ERN_TARGET) series.push({name:`מכסת ERN ${tPct()}`, pts: months.map(m=>({m, v:ERN_TARGET, open:false})), color:cssVar('--bad'), cls:'ref target', noDots:true});
+
+  const all = series.flatMap(s=>s.pts.map(p=>p.v)).filter(v=>v!=null && isFinite(v));
+  if(!all.length){ host.innerHTML='<div class="empty">אין נתונים למדד הזה</div>'; document.getElementById('annLegend').innerHTML=''; return; }
+  const W=900, H=320, ML=16, MR=70, MT=28, MB=40, iw=W-ML-MR, ih=H-MT-MB;
+  const {lo, hi, ticks} = niceTicks(Math.min(0, ...all), Math.max(...all));
+  const y = v => MT + ih - ((v-lo)/((hi-lo)||1))*ih;
+  // RTL: החודש הראשון מימין, האחרון משמאל
+  const x = i => ML + (months.length===1 ? iw/2 : iw - i*(iw/(months.length-1)));
+  const lbl = v => kind==='pct' ? `${(v*100).toFixed(0)}%` : (kind==='int' ? nf0.format(v) : (kind==='num' ? nf1.format(v) : (Math.abs(v)>=1000 ? `${nf0.format(v/1000)}K` : nf0.format(v))));
+  const grid = ticks.map(t=>`<line class="gridline" x1="${ML}" x2="${ML+iw}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text class="axis" x="${ML+iw+8}" y="${(y(t)+4).toFixed(1)}">${lbl(t)}</text>`).join('');
+  const xlab = months.map((m,i)=>`<text class="axis" x="${x(i).toFixed(1)}" y="${MT+ih+22}" text-anchor="middle">${shortMonth(m)}${compPts[i].open?' •':''}</text>`).join('');
+  const paths = series.map(s=>{
+    const d = s.pts.map((p,i)=> p.v==null ? null : `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).filter(Boolean);
+    const line = d.length ? `<path class="line ${s.cls}" d="M${d.join(' L')}" style="stroke:${s.color}"/>` : '';
+    const dots = s.noDots ? '' : s.pts.map((p,i)=> p.v==null ? '' : `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${s.cls?3.5:5}" fill="${s.color}"${p.open?' opacity=".6"':''}/>`).join('');
+    // ערך מעל כל נקודה בסדרה הראשית (קווי ייחוס בלי תוויות)
+    const end = !s.cls ? s.pts.map((p,i)=> p.v==null ? '' : `<text class="ptlbl" x="${x(i).toFixed(1)}" y="${(y(p.v)-11).toFixed(1)}" text-anchor="middle">${lbl(p.v)}</text>`).join('') : '';
+    return line + dots + end;
+  }).join('');
+  const slot = months.length>1 ? iw/(months.length-1) : iw;
+  const hits = months.map((m,i)=>`<rect class="hit" data-i="${i}" x="${(x(i)-slot/2).toFixed(1)}" y="${MT}" width="${slot.toFixed(1)}" height="${ih}"/>`).join('');
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(meta[1])} לפי חודש">
+    ${grid}<line class="xline hidden" id="annX" y1="${MT}" y2="${MT+ih}"/>${paths}${xlab}${hits}</svg>`;
+  document.getElementById('annLegend').innerHTML = series.length>1
+    ? series.map(s=>`<span><span class="sw" style="background:${s.color}"></span>${esc(s.name)}</span>`).join('') : '';
+
+  const tip = document.getElementById('tip'), xl = document.getElementById('annX');
+  const svg = host.querySelector('svg');
+  const show = (i, ev) => {
+    xl.setAttribute('x1', x(i).toFixed(1)); xl.setAttribute('x2', x(i).toFixed(1)); xl.classList.remove('hidden');
+    tip.replaceChildren();
+    const h = document.createElement('div'); h.style.fontWeight='800'; h.textContent = hebMonth(months[i]) + (compPts[i].open ? ' • חודש פתוח' : ''); tip.appendChild(h);
+    series.forEach(s=>{
+      const row = document.createElement('div'); row.className='row';
+      const nm = document.createElement('span'); const key_ = document.createElement('i'); key_.style.color = s.color; nm.appendChild(key_); nm.appendChild(document.createTextNode(s.name));
+      const val = document.createElement('b'); const f = fmtKind(s.pts[i].v, kind); val.textContent = f.t;
+      row.appendChild(val); row.appendChild(nm); tip.appendChild(row);
+    });
+    tip.classList.add('show');
+    const pad = 14, w = tip.offsetWidth, hgt = tip.offsetHeight;
+    let left = ev.clientX + pad, top = ev.clientY + pad;
+    if(left + w > innerWidth - 8) left = ev.clientX - w - pad;
+    if(top + hgt > innerHeight - 8) top = ev.clientY - hgt - pad;
+    tip.style.left = left+'px'; tip.style.top = top+'px';
+  };
+  svg.addEventListener('pointermove', ev=>{ const r = ev.target.closest('rect.hit'); if(r) show(Number(r.dataset.i), ev); });
+  svg.addEventListener('pointerleave', ()=>{ tip.classList.remove('show'); xl.classList.add('hidden'); });
+  // מקלדת: החצים עוברים בין החודשים ומציגים את אותו טולטיפ
+  svg.tabIndex = 0; let ki = months.length-1;
+  svg.addEventListener('keydown', ev=>{
+    if(ev.key==='ArrowLeft') ki = Math.max(0, ki-1); else if(ev.key==='ArrowRight') ki = Math.min(months.length-1, ki+1); else return;
+    ev.preventDefault(); const b = svg.getBoundingClientRect();
+    show(ki, {clientX: b.left + (x(ki)/W)*b.width, clientY: b.top + b.height/2});
+  });
+  svg.addEventListener('blur', ()=>{ tip.classList.remove('show'); xl.classList.add('hidden'); });
+}
+
+loadMonths().catch(e=>{
+  document.getElementById('mTiles').innerHTML=`<div class="err">שגיאת חיבור ל-Supabase: ${esc(e.message)}</div>`;
+});
+</script>
+</body>
+</html>

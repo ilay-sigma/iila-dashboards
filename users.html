@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>ניהול משתמשים · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>ניהול משתמשים</h1>
+  <span class="sub">סופר אדמין בלבד</span>
+</header>
+<div class="wrap">
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card pastel-lavender">
+    <h2>הוספה או עדכון <span class="note">אותו אדם יכול להתחבר עם כמה כתובות (פרטית + חברה) — שורה לכל כתובת, אותו "מפתח אדם"</span></h2>
+    <div class="info">
+      <b>סופר אדמין</b> — רואה ועורך הכל, מאשר, מנהל משתמשים · <b>מנהל/ת</b> — רואה נתונים בלי לערוך (כל המחלקות, או מחלקה אחת אם נבחרה) ·
+      <b>חבר/ת צוות</b> — נתונים אישיים + נתוני המחלקה. מי שיש לו שני מיילים (פרטי + חברה) מופיע כשורה אחת עם שתי כתובות — ונכנס עם כל אחת מהן. השם המלא הוא מה שמחבר את חבר/ת הצוות לשורה שלו בדוחות — ההתאמה אוטומטית, ורק אם לא נמצאה יופיע בורר ידני.
+      אפשר להקצות הרשאה <b>לפני</b> ההתחברות הראשונה. מי שאין לו שורה כאן — לא רואה כלום.
+    </div>
+    <form class="userform" id="form">
+      <label>אימייל (Google)
+        <input type="email" id="email" required placeholder="name@gmail.com / name@iilaberlin.co.il" autocomplete="off" />
+      </label>
+      <label>תפקיד
+        <select id="role"></select>
+      </label>
+      <label>מחלקה <span id="deptReq" class="hidden">— חובה</span>
+        <select id="dept"><option value="">— כל המחלקות —</option></select>
+      </label>
+      <label>שם מלא
+        <input type="text" id="dname" placeholder="כמו שהשם מופיע בדוחות" autocomplete="off" />
+      </label>
+      <!-- "שם בדוח" ו"מפתח אדם" הם פרטים פנימיים: נקבעים אוטומטית לפי השם המלא,
+           והבורר נחשף רק כשלא נמצאה התאמה. -->
+      <label id="staffWrap" class="hidden">שם בדוח <span class="note">לא נמצאה התאמה אוטומטית — לבחור ידנית</span>
+        <select id="staff"><option value="">— ללא שורה אישית —</option></select>
+      </label>
+      <input type="hidden" id="pkey" />
+      <label>פעיל
+        <select id="active"><option value="1">כן</option><option value="0">לא</option></select>
+      </label>
+      <label>הערות
+        <input type="text" id="notes" placeholder="לא חובה" autocomplete="off" />
+      </label>
+      <div class="rowact">
+        <button class="btn" type="submit">שמירה</button>
+        <button class="btn ghost" type="button" id="clearBtn">ניקוי</button>
+      </div>
+    </form>
+    <div class="err hidden" id="formErr"></div>
+  </div>
+
+  <div class="card">
+    <h2>משתמשים מורשים <span class="note" id="count"></span></h2>
+    <div class="filterbar">
+      <label class="search-field" title="חיפוש">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input type="search" id="search" placeholder="שם, אימייל, מחלקה…" autocomplete="off" />
+      </label>
+      <select id="fLevel"><option value="">כל התפקידים</option><option value="super_admin">סופר אדמין</option><option value="manager">מנהל/ת</option><option value="staff">חבר/ת צוות</option></select>
+      <span class="count" id="fcount"></span>
+    </div>
+    <div class="scroll">
+      <table id="grid">
+        <thead><tr>
+          <th>שם</th><th>אימייל</th><th>תפקיד</th><th>מחלקה</th><th>פעיל</th>
+          <th>צפיות ב-7 ימים <button type="button" class="q" data-q="views_7d">?</button></th><th>צפייה אחרונה</th><th>עודכן</th><th></th>
+        </tr></thead>
+        <tbody><tr><td class="load">טוען…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">
+    ההרשאה נשמרת בטבלה <b>app.access</b>, שאינה חשופה ל-API — כל גישה אליה עוברת דרך פונקציות שבודקות שהמשתמש המחובר הוא סופר אדמין.
+    "צפיות" — כניסה לדף; כניסה נוספת לאותו דף בתוך שעה לא נספרת.
+  </div>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script>
+const A = window.APP_AUTH;
+const $ = id => document.getElementById(id);
+const esc = UI.esc;
+let ROLES = [], STAFF = [], DEPTS = [], ROWS = [];
+let EDITING = null;   // הכתובת המקורית של השורה שנערכת כרגע (להחלפת מייל)
+const LVL = { super_admin: 'סופר אדמין', manager: 'מנהל/ת', staff: 'חבר/ת צוות' };
+
+function showErr(msg){ const el = $('formErr'); if(!msg){ el.classList.add('hidden'); el.textContent=''; return; } el.classList.remove('hidden'); el.textContent = msg; }
+
+function fillStaff(dept, selected){
+  const sel = $('staff');
+  const opts = STAFF.filter(s => !dept || s.kind === dept);
+  sel.innerHTML = '<option value="">— ללא שורה אישית —</option>' +
+    opts.map(s => `<option value="${esc(s.label)}"${s.label===selected?' selected':''}>${esc(s.label)}${dept ? '' : ' · ' + esc(UI.deptTitle(s.kind))}</option>`).join('') +
+    (selected && !opts.some(s=>s.label===selected) ? `<option value="${esc(selected)}" selected>${esc(selected)} (לא בדוח)</option>` : '');
+}
+function onRoleChange(){
+  const r = $('role').value;
+  $('dept').disabled = r === 'super_admin';
+  if(r === 'super_admin') $('dept').value = '';
+  $('staff').disabled = r === 'super_admin';
+  $('deptReq').classList.toggle('hidden', r !== 'staff');
+  fillStaff($('dept').value, $('staff').value);
+  autoStaff();
+}
+// "שם בדוח" הוא פרט פנימי: מתאימים אותו לפי השם המלא, וחושפים את הבורר רק
+// כשאין התאמה. כך אין צורך להכיר את השמות כפי שהם רשומים ברפיד.
+const normName = t => String(t || '').replace(/["'׳״]/g, '').replace(/\s+/g, ' ').trim();
+function autoStaff(){
+  const role = $('role').value, dept = $('dept').value, name = normName($('dname').value);
+  if(role !== 'staff' || !name){ $('staffWrap').classList.add('hidden'); if(role !== 'staff') $('staff').value = ''; return; }
+  const pool = STAFF.filter(x => !dept || x.kind === dept);
+  const hit = pool.find(x => normName(x.label) === name)
+           || pool.find(x => normName(x.label).split(' ').slice().sort().join(' ') === name.split(' ').slice().sort().join(' '));
+  if(hit){ $('staff').value = hit.label; $('staffWrap').classList.add('hidden'); }
+  else $('staffWrap').classList.remove('hidden');
+}
+// מפתח אדם מחבר שתי כתובות של אותו אדם. שתי כתובות עם אותו שם מלא מקבלות
+// אוטומטית את אותו מפתח, ולכן הן מוצגות כשורה אחת — ושתיהן מאפשרות כניסה.
+function autoPersonKey(email){
+  if($('pkey').value.trim()) return $('pkey').value.trim();
+  const name = normName($('dname').value);
+  const twin = name && ROWS.find(r => normName(r.display_name) === name && r.person_key);
+  return twin ? twin.person_key : (email.split('@')[0].replace(/[^a-z0-9._-]/gi, '') || null);
+}
+
+async function load(){
+  const [rows, audit] = await Promise.all([A.rpc('admin_access_list'), A.rpc('admin_identity_audit')]);
+  const status = {}; audit.forEach(a => { status[a.email] = a.status; });
+  ROWS = rows.map(r => ({...r, status: status[r.email] || ''}));
+  $('count').textContent = `(${rows.length})`;
+  const n = k => rows.filter(r => r.app_role === k).length;
+  const active7 = rows.filter(r => Number(r.views_7d) > 0).length;
+  $('tiles').innerHTML = [
+    ['סופר אדמין', n('super_admin')], ['מנהלים', n('manager')], ['חברי צוות', n('staff')],
+    ['פעילים השבוע', active7, 'צפו בדשבורד ב-7 ימים'],
+    ['אנשים', new Set(rows.map(r => r.person_key || r.email)).size, 'כמה כתובות לאותו אדם נספרות פעם אחת'],
+  ].map(([k,v,m]) => `<div class="tile"><div class="k">${k}</div><div class="v" data-count="${v}" data-fmt="int">${v}</div><div class="m">${m||''}</div></div>`).join('');
+  UI.countUp($('tiles'));
+  draw();
+}
+function draw(){
+  const q = $('search').value.trim().toLowerCase(), lv = $('fLevel').value;
+  const me = (A.access && A.access.email) || '';
+  const rows = ROWS.filter(r => (!lv || r.app_role === lv) && (!q || [r.email, r.display_name, r.dept_title, r.staff_label, r.person_key].join(' ').toLowerCase().includes(q)));
+  const people = xs => new Set(xs.map(r => r.person_key || r.email)).size;
+  $('fcount').textContent = rows.length === ROWS.length ? `${people(ROWS)} אנשים · ${ROWS.length} כתובות מייל` : `מציג ${people(rows)} מתוך ${people(ROWS)} אנשים`;
+  // אדם אחד = שורה אחת: כל הכתובות של אותו person_key מוצגות יחד (כל אחת עם עריכה/מחיקה משלה)
+  const groups = [];
+  rows.forEach(r => { const k = r.person_key || r.email; let g = groups.find(x => x.key === k); if(!g){ g = {key:k, rows:[]}; groups.push(g); } g.rows.push(r); });
+  const emailCell = r => r.email.endsWith('@pending.invalid')
+    ? `<span class="chip warn" dir="rtl" title="עדיין אין מייל — לחיצה על עריכה, הקלדת הכתובת האמיתית ושמירה">ממתין למייל</span>`
+    : `<span dir="ltr">${esc(r.email)}</span>`;
+  // סדר התצוגה: מטה (סופר אדמין + מנהלים) ואז מחלקה אחרי מחלקה, לפי סדר המחלקות
+  const deptOrder = new Map(DEPTS.map((d, i) => [d.dept_key, i]));
+  // קטגוריות: סופר אדמין · מנהלים · ואז חברי צוות לפי מחלקה
+  const bucket = g => { const r = g.rows[0]; return r.app_role === 'super_admin' ? '__super__' : r.app_role === 'manager' ? '__mgr__' : (r.department || '__none__'); };
+  const bucketTitle = k => k === '__super__' ? 'סופר אדמין' : k === '__mgr__' ? 'מנהלים' : k === '__none__' ? 'חברי צוות בלי מחלקה'
+    : 'חברי צוות — ' + ((DEPTS.find(d => d.dept_key === k) || {}).title || k);
+  const bucketRank = k => k === '__super__' ? -2 : k === '__mgr__' ? -1 : k === '__none__' ? 999 : (deptOrder.get(k) ?? 99);
+  const roleRank = r => r === 'super_admin' ? 0 : r === 'manager' ? 1 : 2;
+  groups.sort((a, b) => {
+    const ka = bucket(a), kb = bucket(b);
+    if(ka !== kb) return bucketRank(ka) - bucketRank(kb);
+    const ra = a.rows[0], rb = b.rows[0];
+    if(ra.app_role !== rb.app_role) return roleRank(ra.app_role) - roleRank(rb.app_role);
+    return String(ra.display_name || ra.email).localeCompare(String(rb.display_name || rb.email), 'he');
+  });
+  let curBucket = null;
+  document.querySelector('#grid tbody').innerHTML = groups.map(g => { const r = g.rows[0]; const many = g.rows.length > 1;
+    let head = '';
+    const bk = bucket(g);
+    if(bk !== curBucket){ curBucket = bk; const n = groups.filter(x => bucket(x) === bk).length;
+      head = `<tr class="group dept"><td colspan="9">${esc(bucketTitle(bk))} <span class="sub">${n} ${n === 1 ? 'אדם' : 'אנשים'}</span></td></tr>`; }
+    const views = g.rows.reduce((a,x)=>a+Number(x.views_7d||0),0), last = g.rows.map(x=>x.last_view).filter(Boolean).sort().pop();
+    return head + `
+    <tr>
+      <td>${esc(r.display_name || '—')}${r.staff_label && r.status && r.status !== 'תקין' ? ` <span class="warn" title="${esc(r.status)}">⚠</span>` : ''}${many ? ` <span class="chip sky" title="נכנס/ת עם כל אחת מהכתובות">${g.rows.length} כתובות</span>` : ''}</td>
+      <td style="text-align:right">${g.rows.map(x => `<div>${emailCell(x)}</div>`).join('')}</td>
+      <td><span class="chip ${r.app_role==='super_admin'?'accent':r.app_role==='manager'?'lavender':'mint'}">${esc(LVL[r.app_role] || r.role_title)}</span></td>
+      <td>${esc(r.dept_title || (r.app_role==='super_admin' ? 'הכל' : r.app_role==='manager' ? 'כל המחלקות' : '—'))}</td>
+      <td class="${g.rows.some(x=>x.is_active) ? 'pos' : 'neg'}">${g.rows.some(x=>x.is_active) ? 'כן' : 'לא'}</td>
+      <td class="num">${views ? `<b>${views}</b>` : '<span class="dash">0</span>'}</td>
+      <td class="dash">${last ? UI.time(last) : 'מעולם'}</td>
+      <td class="dash">${UI.time(g.rows.map(x=>x.updated_at).sort().pop())}</td>
+      <td class="act">${g.rows.map(x => `<div style="white-space:nowrap">${many ? `<span class="sub" dir="ltr">${esc(x.email.split('@')[1]==='pending.invalid' ? '⏳' : x.email.split('@')[0])}</span> ` : ''}<button class="btn ghost xs" data-edit="${esc(x.email)}" type="button">עריכה</button> ${x.email === me ? '' : `<button class="btn ghost xs" data-del="${esc(x.email)}" type="button">מחיקה</button>`}</div>`).join('')}</td>
+    </tr>`; }).join('') || '<tr><td class="dash" colspan="9">אין משתמשים</td></tr>';
+
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
+    const r = ROWS.find(x => x.email === b.dataset.edit);
+    EDITING = r.email;
+    $('email').value = r.email.endsWith('@pending.invalid') ? '' : r.email;
+    $('email').placeholder = r.email.endsWith('@pending.invalid') ? 'הקלידי כאן את המייל האמיתי' : 'אימייל'; $('role').value = r.app_role; $('dept').value = r.department || '';
+    $('dname').value = r.display_name || ''; $('pkey').value = r.person_key || ''; $('active').value = r.is_active ? '1' : '0';
+    $('notes').value = r.notes || '';
+    onRoleChange(); fillStaff(r.department || '', r.staff_label); $('staff').value = r.staff_label || ''; autoStaff();
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if(!confirm(`למחוק את ההרשאה של ${b.dataset.del}?`)) return;
+    try{ await A.rpc('admin_access_delete', {p_email: b.dataset.del}); UI.toast('נמחק', 'good'); await load(); }
+    catch(e){ showErr('מחיקה נכשלה: ' + e.message); }
+  });
+}
+
+$('role').addEventListener('change', onRoleChange);
+$('dept').addEventListener('change', () => { fillStaff($('dept').value, null); autoStaff(); });
+$('dname').addEventListener('input', UI.debounce(autoStaff, 250));
+$('clearBtn').addEventListener('click', () => { EDITING = null; $('form').reset(); onRoleChange(); showErr(''); });
+$('search').addEventListener('input', UI.debounce(draw, 120));
+$('fLevel').addEventListener('change', draw);
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault(); showErr('');
+  const newEmail = $('email').value.trim().toLowerCase();
+  try{
+    // עריכה של שורה קיימת עם כתובת חדשה (למשל "ממתין למייל") — קודם מחליפים את הכתובת, ואז שומרים את השאר
+    if(EDITING && newEmail && newEmail !== EDITING){
+      await A.rpc('admin_access_rename', { p_old: EDITING, p_new: newEmail });
+    }
+    const res = await A.rpc('admin_access_upsert', {
+      p_email: newEmail, p_role: $('role').value,
+      p_department: $('dept').value || null, p_staff_label: $('staff').value || null,
+      p_display_name: $('dname').value.trim() || null, p_is_active: $('active').value === '1',
+      p_person_key: autoPersonKey(newEmail), p_notes: $('notes').value.trim() || null,
+    });
+    if(res && res.label_known === false) UI.toast('נשמר. השם עדיין לא מופיע בטבלאות המחלקה — יופיע כשתהיה פעילות', 'warn');
+    else UI.toast('נשמר ✓', 'good');
+  }catch(err){ showErr('שמירה נכשלה: ' + err.message); return; }
+  EDITING = null;
+  try{ $('form').reset(); onRoleChange(); await load(); }
+  catch(err){ showErr('נשמר, אך רענון הרשימה נכשל: ' + err.message); }
+});
+
+(async function init(){
+  try{
+    [ROLES, STAFF, DEPTS] = await Promise.all([A.rpc('admin_role_options'), A.rpc('admin_staff_options'), A.rpc('admin_departments')]);
+  }catch(e){
+    document.querySelector('#grid tbody').innerHTML = `<tr><td class="err">אין הרשאת ניהול: ${esc(e.message)}</td></tr>`;
+    return;
+  }
+  $('role').innerHTML = ROLES.map(r => `<option value="${esc(r.app_role)}">${esc(LVL[r.app_role] || r.title)}</option>`).join('');
+  $('dept').innerHTML = '<option value="">— כל המחלקות —</option>' + DEPTS.map(d => `<option value="${esc(d.dept_key)}">${esc(d.title)}</option>`).join('');
+  onRoleChange();
+  try{ await load(); }
+  catch(e){ document.querySelector('#grid tbody').innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`; }
+})();
+</script>
+</body>
+</html>

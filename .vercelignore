@@ -1,0 +1,11 @@
+# קבצים שאינם חלק מהאתר
+serve.py
+*.py
+README.md
+style-preview.html
+.git
+__pycache__
+*.env
+*.env.*
+client_secret*
+*.pem

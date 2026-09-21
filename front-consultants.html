@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>ייעוצים פרונטליים · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>ייעוצים פרונטליים</h1>
+  <select id="month" title="חודש"></select>
+  <label class="toggle" title="הגיליון מחשב את רוב המדדים בלי תוכניות המשך. סימון יכלול אותן בכל המדדים."><input type="checkbox" id="inclFU" /> כולל תוכניות המשך</label>
+  <label class="toggle" title="להציג גם יועצות בלי פעילות החודש"><input type="checkbox" id="showZero" /> גם ללא פעילות</label>
+  <span class="sub" id="asof"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="consultants" aria-selected="true">מסכם יועצות</button>
+    <button data-tab="mine"        aria-selected="false" class="hidden">המכירות שלי</button>
+    <button data-tab="followup"    aria-selected="false">תוכניות המשך — יועצות</button>
+    <button data-tab="daily"       aria-selected="false">לוח יומי</button>
+    <button data-tab="annual"      aria-selected="false">השוואה שנתית</button>
+    <button data-tab="completions" aria-selected="false">השלמות מחודש שעבר</button>
+    <button data-tab="setup"       aria-selected="false" data-write>הגדרות</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <!-- ================= מסכם יועצות ================= -->
+  <section id="tab-consultants">
+    <div class="tiles" id="tiles"></div>
+    <div class="cols two" id="podiumCard">
+      <div class="card pastel-lemon">
+        <h2>🏆 גביעי האיכות <span class="note">הממוצע הגבוה ביותר לפגישה</span></h2>
+        <div id="podium"></div>
+      </div>
+      <div class="card pastel-mint">
+        <h2>🥇 מדליות הכסף <span class="note">הסכום הגבוה ביותר ששולם בפועל</span></h2>
+        <div id="podiumMoney"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>מסכם יועצות <span class="note" id="modeNote"></span></h2>
+      <div class="legend">
+        <span>לחיצה על שם היועצת פותחת את כל הפגישות שלה לפי ימים · לחיצה על מספר אי-ההתאמות פותחת את הרשימה לאישור</span>
+        <span class="hlnote">המודגשים: אחוז סגירה · ממוצע שולם להצעה · ממוצע לעסקה שנסגרה</span>
+        <span>🏆 גביע = ממוצע לפגישה · 🥇 מדליה = שולם בפועל · ⭐ = מעל 80% סגירה · 📈 = שיפור של מעל ₪1,000 בממוצע לפגישה מול חודש שעבר</span>
+        <span class="spacer"></span><span><span class="sw" style="background:var(--good)"></span>מעל היעד</span><span><span class="sw" style="background:var(--warn)"></span>עד 30% מתחת</span><span><span class="sw" style="background:var(--bad)"></span>יותר מ-30% מתחת</span>
+      </div>
+      <div class="scroll"><table id="grid" class="rank-first"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h2>עמידה ביעד לפי יועצת <span class="note">ממוצע שולם להצעה מול היעד</span></h2>
+        <div id="attain"></div>
+      </div>
+      <div class="card">
+        <h2>ספירת פגישות <span class="note" id="paramsNote"></span></h2>
+        <div id="counts"></div>
+      </div>
+    </div>
+
+
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <!-- ================= המכירות שלי ================= -->
+  <section id="tab-mine" class="hidden">
+    <div class="tiles" id="mineTiles"></div>
+    <div class="card pastel-mint">
+      <h2>המכירות שלי <span class="note" id="mineNote"></span></h2>
+      <div class="info">כל תוכנית שנזקפה לך החודש, לפי תאריך הפתיחה.</div>
+      <div class="info mgr" id="mineRule"></div>
+      <div id="mineList"></div>
+    </div>
+    <div class="card">
+      <h2>ממתינות לתשלום <span class="note" id="openNote">מהחודש ומחודש שעבר</span></h2>
+      <div class="info">תוכניות שהוצעו ועדיין לא נספרו ב"שולם", כי התשלום לא הגיע לסף. <b>מה ששולם חלקית מסומן</b> — שם הכסף הכי קרוב לסגירה.</div>
+      <div id="openList"></div>
+    </div>
+  </section>
+
+  <!-- ================= תוכניות המשך ================= -->
+  <section id="tab-followup" class="hidden">
+    <div class="tiles" id="fuTiles"></div>
+    <div class="card pastel-lemon hidden" id="fuPodiumCard">
+      <h2>🏆 גביעי תוכניות ההמשך <span class="note">לפי הסכום ששולם החודש</span></h2>
+      <div id="fuPodium"></div>
+    </div>
+    <div class="card">
+      <h2>תוכניות המשך — יועצות <span class="note">תוכניות מסוג "תוכניות המשך" בלבד · ממוין לפי הסכום ששולם</span></h2>
+      <div class="scroll"><table id="fuGrid" class="rank-first"><thead></thead><tbody></tbody></table></div>
+      <div class="foot" id="fuFoot"></div>
+    </div>
+  </section>
+
+  <!-- ================= לוח יומי ================= -->
+  <section id="tab-daily" class="hidden">
+    <div class="card">
+      <h2>🏆 ממוצע נע לפי יועצת <span class="note">המגמה של כל יועצת: ממוצע לפגישה ביום האחרון, ב-3 הימים וב-7 הימים האחרונים · הדירוג לפי ממוצע 7 ימים</span></h2>
+      <div class="scroll"><table id="rollGrid" class="rank-first"><thead></thead><tbody></tbody></table></div>
+      <div class="foot" id="rollFoot"></div>
+    </div>
+    <div class="card">
+      <h2>שולם ליום — כל היועצות <span class="note">סכום התוכניות ששולמו לפי יום הפתיחה · כל עמודה מחולקת לפי יועצת · ריחוף מציג מי תרמה כמה</span></h2>
+      <div class="chartwrap" id="dailyBars"></div>
+    </div>
+    <div class="card">
+      <h2>טבלת החום <span class="note">המספר בכל תא הוא הערך; הצבע משני</span></h2>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--bad)"></span>מתחת לסטנדרט הנמוך (<span id="lgLow"></span>)</span>
+        <span><span class="sw" style="background:var(--warn)"></span>בין הסטנדרטים</span>
+        <span><span class="sw" style="background:var(--good)"></span>מעל הסטנדרט הגבוה (<span id="lgHigh"></span>)</span>
+      </div>
+      <div class="scroll"><table id="dailyGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+      <div class="card">
+      <h2>ממוצע שולם לפגישה — לפי יועצת ולפי יום <span class="note">קו לכל יועצת · ריחוף מציג את היום</span></h2>
+      <div class="chartwrap" id="dailyChart"></div>
+    </div>
+</section>
+
+  <!-- ================= השוואה שנתית ================= -->
+  <section id="tab-annual" class="hidden">
+    <div class="tiles" id="annTiles"></div>
+    <div class="card">
+      <h2>מדדים לפי חודש <span class="note">כל החודשים שנטענו · החודש הנבחר מסומן</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>מגמה חודשית
+        <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="annMetric"></select>
+          <select id="annKind"><option value="lines">נקודות מחוברות</option><option value="bars">עמודות</option></select></label>
+      </h2>
+      <div class="chartwrap" id="annChart"></div>
+    </div>
+    <!-- טבלת השוואה בין יועצות — לא מוצגת ליועצת בודדת -->
+    <div class="card" data-level="super_admin,manager">
+      <h2>לפי יועצת ולפי חודש
+        <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="mxMetric"></select></label>
+      </h2>
+      <div class="scroll"><table id="annMatrix"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>לפי שבועות <span class="note">כל נקודה = שבוע שלם, ראשון עד שבת · התווית היא טווח התאריכים</span></h2>
+      <div class="filterbar" id="weekPick">
+        <span class="sub">מי מוצגת:</span>
+        <span class="pickchips" id="weekChips"></span>
+        <button class="btn ghost xs" type="button" id="weekAll">הכול</button>
+        <button class="btn ghost xs" type="button" id="weekActive">רק פעילות</button>
+        <span class="count sub" id="weekCount"></span>
+      </div>
+      <div class="chartwrap" id="weekChart"></div>
+    </div>
+    <div class="foot" id="annFoot"></div>
+  </section>
+
+  <!-- ================= השלמות מחודש שעבר ================= -->
+  <section id="tab-completions" class="hidden">
+    <div class="tiles" id="cmpTiles"></div>
+    <div class="card pastel-mint">
+      <h2>השלמות מחודש שעבר — יועצות <span class="note" id="cmpNote"></span></h2>
+      <div class="info">תשלומים שנכנסו החודש על תוכניות מחודשים קודמים, מאז צילום הבסיס של 1 בחודש. סכום ההשלמות מתווסף ל"שולם עד כה" של היועצת. לחיצה על יועצת פותחת את פירוט ההפרש — הלקוחות שגרמו לו. הדף המלא לכל המחלקות: <a href="completions.html">השלמות מחודש קודם</a>.</div>
+      <div class="scroll"><table id="cmpGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= הגדרות ================= -->
+  <section id="tab-setup" class="hidden">
+    <div class="card pastel-lavender">
+      <h2>פרמטרים של החודש <span class="note">סופר אדמין · שינוי נשמר מיד</span></h2>
+      <div class="info">אלה הספירות הידניות שנכנסות ל"ספירת פגישות" (לא לחישוב הממוצעים). אפשר להוסיף הערות/פירוט לחודש.</div>
+      <div id="monthEdit"></div>
+      <div class="compose"><textarea id="monthNotes" placeholder="הערות / פירוט לחודש…"></textarea><button class="btn sm" id="saveNotes" type="button">שמירת הערות</button></div>
+    </div>
+    <div class="card">
+      <h2>יועצות בטבלה <span class="note">מי נספרת בסיכומים</span></h2>
+      <div class="info">יועצת שלא נכללת בסיכומים מוצגת רק כשמסמנים "גם ללא פעילות". שינוי היעד לממוצע שולם להצעה — למעלה בפרמטרים.</div>
+      <div class="scroll"><table id="consGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>ימי עבודה</h2>
+      <div class="info">לוח ימי העבודה (חגים, סגירות, חצאי ימים) נערך במסך <a href="index.html#days">KPI — הכנסות › ימי עבודה</a>. הפרונט נספר א׳–ו׳ עם שישי חצי יום, ערב חג חצי יום, וערבי ראש השנה/כיפור/פסח סגורים.</div>
+    </div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script src="js/front-config.js?v=20260918y"></script>
+<script>
+const C = window.FRONT_CONFIG;
+const rest = UI.rest, esc = UI.esc, money = UI.money, pct = UI.pct, int = UI.int, q = UI.q;
+let MONTH = null, MONTHS = [], ROWS = [], TOT = null, PREV = null, MM = [], ANN_CACHE = null, MY_ROWS = [], CMP = null;
+let PREV_AVG = new Map();   // שם היועצת → ממוצע לפגישה בחודש הקודם
+let FU = {paid:0, pace:0}, FU_PREV = {paid:0};   // תוכניות המשך: החודש והחודש הקודם
+// ברירת המחדל של "מסכם יועצות": מהמקום הראשון בממוצע שולם להצעה ולמטה.
+// לחיצה על כותרת מחליפה כיוון, ולחיצה שלישית מחזירה לברירת המחדל.
+const SORT_DEFAULT = { key: 'avg_paid_per_offer', dir: 'desc' };
+const SORT = { ...SORT_DEFAULT };
+const IMPROVED_MIN = 1000;  // שיפור מעל הסכום הזה מקבל סמל מגמה
+const mode = () => document.getElementById('inclFU').checked ? 'incl_followup' : 'excel';
+const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='daily') renderDaily(); if(t==='followup') renderFollowup(); if(t==='completions') renderCompletions(); if(t==='setup') renderSetup(); if(t==='mine') renderMine(); });
+
+// --------------------------------------------------------------------------- טעינה
+async function init(){
+  const months = await rest('front_totals?select=period_month&mode=eq.excel&order=period_month.desc');
+  MONTHS = [...new Set(months.map(r=>r.period_month))];
+  const sel = document.getElementById('month');
+  UI.fillMonths(sel, MONTHS, MONTHS[0]);
+  sel.onchange = ()=>{ MONTH = sel.value; reloadCurrent(); };
+  document.getElementById('inclFU').onchange = ()=>{ ANN_CACHE=null; reloadCurrent(); };
+  document.getElementById('showZero').onchange = ()=>drawConsultants();
+  MONTH = MONTHS[0];
+  if(!MONTH){ document.getElementById('tiles').innerHTML='<div class="err">אין נתונים ב-Supabase.</div>'; return; }
+  await reloadCurrent();
+}
+async function reloadCurrent(){
+  await renderConsultants();
+  const t = tabs.current();
+  if(t==='annual') renderAnnual(); if(t==='daily') renderDaily(); if(t==='followup') renderFollowup(); if(t==='completions') renderCompletions(); if(t==='setup') renderSetup();
+  if(t==='mine') renderMine();
+}
+
+// --------------------------------------------------------------------------- מסכם יועצות
+const COLS = [
+  ['rank','#','rank','rank'], ['display_name','שם היועצת','name',null],
+  ['offers','סה״כ הצעות','int','offers'], ['not_opened','אי-התאמה לא מאושרת','mm','not_opened'], ['mismatch_ok','אי-התאמה מאושרת','int','mismatch_ok'],
+  ['closings','סגירה','int','closings'], ['closing_pct','אחוז סגירת פגישות','pct','closing_pct'],
+  ['offer_sum','סכום הצעות','money','offer_sum'], ['no_credits','ללא זיכויים','money','no_credits'],
+  ['paid','שולם עד כה','paid','paid'], ['prev_completions','השלמות מחודש שעבר','cmp','prev_completions'],
+  ['monthly_pace','קצב חודשי','pace','monthly_pace_front'],
+  ['avg_paid_per_offer','ממוצע שולם להצעה','avg','avg_paid_per_offer'], ['avg_paid_per_closing','ממוצע לעסקה שנסגרה','avg2','avg_paid_per_closing'],
+  ['pct_of_target','אחוז מהיעד','meter','pct_of_target'], ['real_avg_per_meeting','ממוצע אמיתי לפגישה','money','real_avg'],
+];
+async function renderConsultants(){
+  const body = document.querySelector('#grid tbody');
+  body.innerHTML = '<tr><td class="load">טוען…</td></tr>';
+  try{
+    const [rows, tot, prev, mm, prevRows, fu, fuPrev] = await Promise.all([
+      rest(`front_consultants?period_month=eq.${MONTH}&mode=eq.${mode()}&order=block,row_order`),
+      rest(`front_totals?period_month=eq.${MONTH}&mode=eq.${mode()}`),
+      rest(`front_totals?period_month=eq.${UI.prevMonth(MONTH)}&mode=eq.${mode()}`),
+      rest(`front_mismatches?period_month=eq.${MONTH}&order=display_name,appt_date`),
+      // החודש הקודם ברמת היועצת — כדי לזהות מי השתפרה בממוצע לפגישה
+      rest(`front_consultants?period_month=eq.${UI.prevMonth(MONTH)}&mode=eq.${mode()}&select=display_name,avg_paid_per_offer`),
+      // תוכניות המשך — לאריח "כסף מתוכניות המשך" (החודש והחודש הקודם)
+      rest(`front_followup?period_month=eq.${MONTH}`).catch(()=>[]),
+      rest(`front_followup?period_month=eq.${UI.prevMonth(MONTH)}`).catch(()=>[]),
+    ]);
+    ROWS = rows; TOT = tot[0] || {}; PREV = prev[0] || null; MM = mm;
+    PREV_AVG = new Map((prevRows||[]).map(r=>[r.display_name, Number(r.avg_paid_per_offer)||0]));
+    const sum = (arr,k) => (arr||[]).reduce((a,r)=>a+Number(r[k]||0),0);
+    FU = { paid: sum(fu,'paid'), pace: sum(fu,'monthly_pace') };
+    FU_PREV = { paid: sum(fuPrev,'paid') };
+  }catch(e){ body.innerHTML = `<tr><td class="err">שגיאת טעינה: ${esc(e.message)}</td></tr>`; return; }
+  const t = TOT;
+  const wd = Object.keys(t).length ? t : (ROWS[0] || {});
+  document.getElementById('asof').textContent = `${UI.one(wd.workdays_elapsed)} מתוך ${UI.one(wd.workdays_in_month)} ימי עבודה · מקור: Supabase (רפיד)`;
+  document.getElementById('modeNote').textContent = mode()==='excel' ? 'ללא תוכניות המשך — כמו בגיליון' : 'כולל תוכניות המשך בכל המדדים';
+
+  const isOpen = MONTH === UI.thisMonth();
+  const vsPrev = PREV ? UI.delta(isOpen ? t.monthly_pace : t.paid, PREV.paid) : null;
+  const tgtRatio = t.target_avg_per_offer ? Number(t.avg_paid_per_offer)/Number(t.target_avg_per_offer) : null;
+  const paceRatio = PREV && Number(PREV.paid) ? Number(t.monthly_pace)/Number(PREV.paid) : null;
+  // קצב פגישות הייעוץ לסוף החודש — לפי ימי העבודה שעברו
+  const meetPace = Number(wd.workdays_elapsed) ? Number(t.total_meetings||0) / Number(wd.workdays_elapsed) * Number(wd.workdays_in_month) : Number(t.total_meetings||0);
+  const tiles = document.getElementById('tiles');
+  // יועצת רואה קודם כל את עצמה, בדיוק כמו במטפלות: ההישג האישי הוא הכותרת.
+  const meRow = ROWS.find(r => r.display_name === UI.label());
+  if(meRow){ tiles.innerHTML = myTiles(meRow, t); UI.countUp(tiles); }
+  else tiles.innerHTML = [
+    `<div class="tile hero"><div class="k">שולם עד כה ${q('paid')}</div><div class="v" data-count="${t.paid||0}" data-fmt="money">${money(t.paid)}</div><div class="m">${int(t.closings)} סגירות מתוך ${int(t.offers)} הצעות · ${pct(t.closing_pct)}</div>${UI.prevLine(t.paid, PREV && PREV.paid, money)}</div>`,
+    // הקצב, ומתחתיו חודש שעבר — במקום אריח נפרד
+    `<div class="tile ${UI.paceCls(paceRatio)}"><div class="k">קצב — צפי לסוף החודש ${q('monthly_pace_front')}</div><div class="v" data-count="${t.monthly_pace||0}" data-fmt="money">${money(t.monthly_pace)}</div><div class="m">${PREV?UI.statusPill(paceRatio, `${pct(paceRatio,0)} מחודש שעבר`):'אין חודש קודם'}</div>` +
+      `${PREV?`<div class="prevline"><span class="lbl">חודש שעבר</span><b>${money(PREV.paid)}</b> ${UI.deltaHtml(vsPrev)}</div>`:'<div class="prevline dash">אין נתון לחודש שעבר</div>'}</div>`,
+    `<div class="tile ${UI.paceCls(tgtRatio)}"><div class="k">ממוצע שולם להצעה ${q('avg_paid_per_offer')}</div><div class="v" data-count="${t.avg_paid_per_offer||0}" data-fmt="money">${money(t.avg_paid_per_offer)}</div><div class="m">${pct(tgtRatio,0)} מיעד ${money(t.target_avg_per_offer)}</div>${UI.prevLine(t.avg_paid_per_offer, PREV && PREV.avg_paid_per_offer, money)}</div>`,
+    // עסקה ממוצעת = שולם ÷ סגירות
+    `<div class="tile"><div class="k">עסקה ממוצעת ${q('avg_paid_per_closing')}</div><div class="v" data-count="${t.avg_paid_per_closing||0}" data-fmt="money">${money(t.avg_paid_per_closing)}</div><div class="m">${int(t.closings)} סגירות</div>${UI.prevLine(t.avg_paid_per_closing, PREV && PREV.avg_paid_per_closing, money)}</div>`,
+    // פגישות ייעוץ: כמה עד עכשיו, ומתחת — הקצב לסוף החודש וחודש שעבר
+    `<div class="tile"><div class="k">פגישות ייעוץ עד עכשיו ${q('total_meetings')}</div><div class="v" data-count="${t.total_meetings||0}" data-fmt="int">${int(t.total_meetings)}</div>` +
+      `<div class="m">קצב לסוף החודש ${int(meetPace)}</div>${UI.prevLine(t.total_meetings, PREV && PREV.total_meetings, int)}</div>`,
+    // כסף מתוכניות המשך (rules.front_followup_config) — לא נכלל ב"שולם עד כה"
+    `<div class="tile"><div class="k">כסף מתוכניות המשך ${q('followup_paid')}</div><div class="v" data-count="${FU.paid||0}" data-fmt="money">${money(FU.paid)}</div>` +
+      `<div class="m">קצב לסוף החודש ${money(FU.pace)}</div>${UI.prevLine(FU.paid, FU_PREV.paid || null, money)}</div>`,
+    `<div class="tile"><div class="k">אי-התאמות ${q('not_opened')}</div><div class="v small ${Number(t.not_opened)?'neg':'pos'}">${int(t.not_opened)}</div><div class="m">לא מאושרות · ${int(t.mismatch_ok)} מאושרות</div>${UI.prevLine(t.not_opened, PREV && PREV.not_opened, int)}</div>`,
+  ].join('');
+  if(!meRow) UI.countUp(tiles);
+  if(tgtRatio!=null && tgtRatio>=1) UI.celebrateOnce('front-'+MONTH);
+  drawConsultants();
+  renderCounts();
+  document.getElementById('foot').innerHTML = UI.isStaff()
+    ? `${ROWS.length} יועצות בטבלה · שאר הנתונים בדף הם שלך בלבד · יעד ממוצע שולם להצעה ${money(t.target_avg_per_offer)} · אי-התאמה = ייעוץ שהגיע בלי הצעה תוך 14 יום ${q('not_opened')}`
+    : `${ROWS.length} יועצות · יעד ממוצע שולם להצעה ${money(t.target_avg_per_offer)} · אי-התאמה = ייעוץ שהגיע בלי הצעה תוך 14 יום ${q('not_opened')} · ההתאמות הידניות מהאקסל אינן נספרות עוד.`;
+}
+// האריחים של יועצת: הכול אישי, והמחלקה רק כהקשר בסוף.
+function myTiles(me, tot){
+  const target = Number(me.target_avg_per_offer||0), a = Number(me.pct_of_target);
+  const prevAvg = PREV_AVG.get(me.display_name);
+  const isOpen = MONTH === UI.thisMonth();
+  return [
+    `<div class="tile hero"><div class="k">שולם עד כה — שלי ${q('paid')}</div>` +
+      `<div class="v" data-count="${me.paid||0}" data-fmt="money">${money(me.paid)}</div>` +
+      `<div class="m">${int(me.closings)} סגירות מתוך ${int(me.offers)} הצעות · ${pct(me.closing_pct)}</div></div>`,
+    `<div class="tile ${UI.paceCls(a)}"><div class="k">ממוצע שולם להצעה — שלי ${q('avg_paid_per_offer')}</div>` +
+      `<div class="v" data-count="${me.avg_paid_per_offer||0}" data-fmt="money">${money(me.avg_paid_per_offer)}</div>` +
+      `<div class="m">${target?`${pct(a,0)} מיעד ${money(target)}`:'לא הוגדר יעד'}</div>` +
+      `${UI.prevLine(me.avg_paid_per_offer, prevAvg, money)}</div>`,
+    `<div class="tile"><div class="k">הקצב שלי — צפי לסוף החודש ${q('monthly_pace_front')}</div>` +
+      `<div class="v" data-count="${me.monthly_pace||0}" data-fmt="money">${money(me.monthly_pace)}</div>` +
+      `<div class="m">${isOpen?'לפי הקצב עד כה':'החודש נסגר'} · ${UI.one(me.workdays_elapsed)} מתוך ${UI.one(me.workdays_in_month)} ימי עבודה</div></div>`,
+    `<div class="tile"><div class="k">ההצעות שלי ${q('offers')}</div>` +
+      `<div class="v small" data-count="${me.offers||0}" data-fmt="int">${int(me.offers)}</div>` +
+      `<div class="m">ממוצע לעסקה שנסגרה ${money(me.avg_paid_per_closing)}</div></div>`,
+    `<div class="tile"><div class="k">אי-התאמות שלי ${q('not_opened')}</div>` +
+      `<div class="v small ${Number(me.not_opened)?'neg':'pos'}">${int(me.not_opened)}</div>` +
+      `<div class="m">לא מאושרות · ${int(me.mismatch_ok)} מאושרות</div></div>`,
+    UI.isStaff() || !Object.keys(tot).length
+      ? `<div class="tile"><div class="k">השלמות מחודש שעבר — שלי ${q('prev_completions')}</div>` +
+        `<div class="v small">${money(me.prev_completions)}</div><div class="m">נכללות ב"שולם עד כה"</div></div>`
+      : `<div class="tile"><div class="k">כל היועצות <span class="sub">להשוואה</span></div>` +
+        `<div class="v small">${money(tot.paid)}</div>` +
+        `<div class="m">החלק שלי ${Number(tot.paid)?pct(Number(me.paid)/Number(tot.paid),0):'—'}</div></div>`,
+  ].join('');
+}
+
+function activeRows(){
+  const showZero = document.getElementById('showZero').checked;
+  const rows = ROWS.filter(r => showZero || (r.include_in_totals && (Number(r.offers)>0 || Number(r.paid)>0)));
+  // יועצת בלי פגישות אין לה ממוצע, ולכן היא יורדת לסוף ולא מתערבבת בדירוג
+  const sorted = UI.applySort(rows, SORT);
+  return SORT.key === 'avg_paid_per_offer'
+    ? sorted.slice().sort((a,b)=>(Number(a.offers)>0?0:1)-(Number(b.offers)>0?0:1))
+    : sorted;
+}
+function drawConsultants(){
+  const rows = activeRows();
+  // שני דירוגים במקביל: גביעים לאיכות (ממוצע לפגישה), מדליות לכסף שהתקבל בפועל.
+  const ranked = rows.filter(r=>Number(r.offers)>0).slice().sort((a,b)=>Number(b.avg_paid_per_offer)-Number(a.avg_paid_per_offer));
+  const rankOf = new Map(ranked.map((r,i)=>[r.display_name, i+1]));
+  const byMoney = rows.filter(r=>Number(r.paid)>0).slice().sort((a,b)=>Number(b.paid)-Number(a.paid));
+  const moneyOf = new Map(byMoney.map((r,i)=>[r.display_name, i+1]));
+  const tgt = Number(TOT.target_avg_per_offer||0), maxPaid = Math.max(...rows.map(r=>Number(r.paid)||0), 1);
+  const me = UI.label();
+  document.getElementById('podium').innerHTML = ranked.length
+    ? UI.podium(ranked.slice(0,3).map(r=>({name:r.display_name, value:Number(r.avg_paid_per_offer), sub:`${pct(r.pct_of_target,0)} מהיעד · ${int(r.closings)} סגירות`})), {kind:'cup'})
+    : '<div class="empty">אין נתונים</div>';
+  document.getElementById('podiumMoney').innerHTML = byMoney.length
+    ? UI.podium(byMoney.slice(0,3).map(r=>({name:r.display_name, value:Number(r.paid), sub:`${int(r.closings)} סגירות · ממוצע ${money(r.avg_paid_per_offer)}`})), {kind:'medal'})
+    : '<div class="empty">אין נתונים</div>';
+  document.getElementById('podiumCard').classList.toggle('hidden', ranked.length<2 && byMoney.length<2);
+  // שלושת המדדים שמודדים איכות מכירה — מודגשים: אחוז סגירה, ממוצע להצעה, ממוצע לעסקה
+  const HL = new Set(['pct','avg','avg2']);
+  const thead = document.querySelector('#grid thead');
+  thead.innerHTML = `<tr>${COLS.map(c=>{
+    const sortable = c[2] !== 'rank';
+    const cls = [HL.has(c[2])?'hl':'', sortable?'sortable':''].filter(Boolean).join(' ');
+    return `<th${cls?` class="${cls}"`:''}${sortable?` data-key="${esc(c[0])}"${SORT.key===c[0]?` data-dir="${SORT.dir}"`:''} title="מיון לפי ${esc(c[1])}"`:''}>${c[1]} ${c[3]?q(c[3]):''}</th>`;
+  }).join('')}</tr>`;
+  UI.sortOn(thead, SORT, drawConsultants, SORT_DEFAULT);
+  const cellOf = (r, c, isTotal) => {
+    const v = r[c[0]];
+    switch(c[2]){
+      case 'rank': return isTotal ? '<td></td>' : `<td>${rankOf.has(r.display_name)?UI.rank(rankOf.get(r.display_name), {kind:'cup', what:'ממוצע לפגישה', me:r.display_name===me}):'<span class="dash">—</span>'}</td>`;
+      case 'name': return isTotal ? '<td>מסכם</td>' : `<td><a href="#" class="cons" data-name="${esc(r.display_name)}" title="פתיחת כל הפגישות לפי ימים">${esc(r.display_name)}</a>${r.display_name===me?' <span class="chip lemon">אני</span>':''}${r.include_in_totals?'':' <span class="chip">לא בסיכום</span>'}</td>`;
+      case 'mm': return `<td class="num"><a href="#" class="mmlink ${Number(v)?'neg':'dash'}" data-name="${isTotal?'':esc(r.display_name)}" title="פתיחת רשימת אי-ההתאמות">${int(v)}</a></td>`;
+      case 'paid': return `<td class="num">${UI.databar(v, maxPaid, 'accent', money(v))}` +
+        `${!isTotal && moneyOf.get(r.display_name)<=3 ? ' ' + UI.rank(moneyOf.get(r.display_name), {kind:'medal', noNum:true, what:'שולם בפועל'}) : ''}</td>`;
+      case 'cmp': return `<td class="num ${Number(v)?'':'dash'}">${Number(v)?money(v):'—'}</td>`;
+      case 'pace': { const ratio = PREV && Number(PREV.paid) ? Number(v)/Number(PREV.paid) : null; return `<td class="num ${UI.paceCls(tgt && r.avg_paid_per_offer ? Number(r.avg_paid_per_offer)/tgt : null)}">${money(v)}</td>`; }
+      case 'avg': return `<td class="num hl">${UI.databar(v, tgt||1, UI.paceCls(tgt?Number(v)/tgt:null), money(v))}${isTotal?'':improvedBadge(r)}</td>`;
+      case 'avg2': return `<td class="num hl"><b>${money(v)}</b></td>`;
+      case 'meter': return `<td>${v==null?'<span class="dash">—</span>':UI.meter(Number(v))}</td>`;
+      case 'money': return `<td class="num">${money(v)}</td>`;
+      // כוכב זהב מ-80% סגירה ומעלה — הרף שסוכם כמצוין.
+      case 'pct': return `<td class="num hl"><b>${pct(v)}</b>${UI.star(Number(v) >= 0.8, 'מעל 80% סגירת פגישות')}</td>`;
+      default: return `<td class="num">${int(v)}</td>`;
+    }
+  };
+  document.querySelector('#grid tbody').innerHTML =
+    rows.map(r=>`<tr class="${r.display_name===me?'me':''} ${r.include_in_totals?'':'muted'}">${COLS.map(c=>cellOf(r,c,false)).join('')}</tr>`).join('') +
+    `<tr class="total">${COLS.map(c=>cellOf(TOT,c,true)).join('')}</tr>`;
+  document.querySelectorAll('#grid a.cons').forEach(a=>a.onclick=e=>{ e.preventDefault(); openConsultant(a.dataset.name); });
+  document.querySelectorAll('#grid a.mmlink').forEach(a=>a.onclick=e=>{ e.preventDefault(); openMismatches(a.dataset.name||null); });
+
+  // עמידה ביעד — מדים
+  const sorted = ranked;
+  document.getElementById('attain').innerHTML = UI.tierLegend() + sorted.map((r,i)=>{
+    const p = Number(r.pct_of_target)||0;
+    return `<div class="leader ${r.display_name===me?'me':''}"><span class="nm">${UI.rank(i+1,{hideOthers:true})} ${esc(r.display_name)}</span><span class="bar race" title="${UI.tierName(p)} · ${UI.gapText(p)}"><i class="${UI.tierCls(p)}" style="--w:${Math.min(100,p/1.2*100).toFixed(1)}%"></i></span><span class="vl">${money(r.avg_paid_per_offer)}</span><span class="sub" style="min-width:60px">${pct(p,0)}</span></div>`;
+  }).join('') || '<div class="empty">אין נתונים</div>';
+}
+// מי שהממוצע לפגישה שלה עלה ביותר מ-1,000 ₪ מול החודש הקודם מקבלת סמל מגמה.
+// מי שלא הייתה בדוח בחודש הקודם אינה מושווית כלל; מי שהייתה עם ממוצע 0 כן —
+// עלייה מאפס היא שיפור אמיתי, והטקסט אומר את זה במפורש.
+function improvedBadge(r){
+  const prev = PREV_AVG.get(r.display_name);
+  if(prev == null) return '';
+  const delta = Number(r.avg_paid_per_offer||0) - prev;
+  if(delta <= IMPROVED_MIN) return '';
+  const from = prev ? `מ-${money(prev)} ל-${money(r.avg_paid_per_offer)}` : 'מאפס בחודש שעבר';
+  return `<span class="trendup" title="שיפור בממוצע לפגישה של ${money(delta)} — ${from}. מדהים!">📈</span>`;
+}
+
+function renderCounts(){
+  const t = TOT;
+  // עובדת: ספירות אישיות בלבד — בלי הפרמטרים החודשיים של המחלקה
+  const meRow = UI.isStaff() ? ROWS.find(r => r.display_name === UI.label()) : null;
+  if(UI.isStaff()){
+    const m = meRow || {};
+    document.getElementById('counts').innerHTML = [
+      ['הצעות שלי', int(m.offers), 'offers'], ['סגירות שלי', int(m.closings), 'closings'], ['אחוז סגירה', pct(m.closing_pct), 'closing_pct'],
+      ['אי-התאמות (לא מאושרות + מאושרות)', `${int(m.not_opened)} + ${int(m.mismatch_ok)}`, 'not_opened'], ['הלכו', int(m.clients_left), null],
+    ].map(([k,v,qk])=>`<div class="kv"><span class="lbl">${k} ${qk?q(qk):''}</span><span class="val">${v}</span></div>`).join('');
+    document.getElementById('paramsNote').textContent = 'הנתונים שלך בלבד';
+    return;
+  }
+  const P = [['double_meetings','השלמה פגישות כפולות'],['clients_left_month','הלכו'],['no_show','אי הופעה'],['taken_by_other','התקבל ע״י מישהי אחרת'],['missing_documentation','סה״כ חוסרי תיעוד'],['non_center_meetings','פגישות לא של המוקד']];
+  const counts = [
+    ['סה״כ פגישות', int(t.total_meetings), 'total_meetings'], ['סה״כ למוקד', int(t.total_call_center), 'total_call_center'], ['סה״כ מחלקת ייעוצים', int(t.total_consult_dept), 'total_consult_dept'],
+    ['הצעות', int(t.offers), 'offers'], ['אי-התאמות (לא מאושרות + מאושרות)', `${int(t.not_opened)} + ${int(t.mismatch_ok)}`, 'not_opened'],
+  ];
+  document.getElementById('counts').innerHTML = counts.map(([k,v,qk])=>`<div class="kv"><span class="lbl">${k} ${q(qk)}</span><span class="val">${v}</span></div>`).join('') +
+    P.map(([k,l])=>`<div class="kv"><span class="lbl">${l}</span><span class="val">${t[k]==null?'<span class="dash">—</span>':int(t[k])}</span></div>`).join('') +
+    (t.notes ? `<div class="info"><b>הערות לחודש:</b> ${esc(t.notes)}</div>` : '');
+  // העריכה של המספרים האלה נמצאת בטאב "הגדרות" ולא כאן
+  document.getElementById('paramsNote').textContent = UI.canWrite() ? 'עריכה בטאב "הגדרות"' : '';
+}
+
+// --------------------------------------------------------------------------- פתיחת יועצת: כל הפגישות לפי ימים
+async function openConsultant(name){
+  const m = UI.modal({ title:`${esc(name)} — פגישות ותוכניות · ${UI.heb(MONTH)}`, wide:true, body:'<div class="load">טוען…</div>' });
+  try{
+    const [appts, plans] = await Promise.all([
+      rest(`front_appointments?period_month=eq.${MONTH}&display_name=eq.${encodeURIComponent(name)}&order=appt_date.desc,appt_time`),
+      rest(`front_my_clients?period_month=eq.${MONTH}&mode=eq.${mode()}&display_name=eq.${encodeURIComponent(name)}&order=creation_date.desc`),
+    ]);
+    const days = [...new Set([...appts.map(a=>a.appt_date), ...plans.map(p=>p.creation_date)].filter(Boolean))].sort().reverse();
+    const draw = (qs) => {
+      const qq = (qs||'').trim().toLowerCase();
+      const A = appts.filter(a=>!qq || (a.client_name||'').toLowerCase().includes(qq)), Pn = plans.filter(p=>!qq || (p.client_name||'').toLowerCase().includes(qq) || (p.plan_name||'').toLowerCase().includes(qq));
+      const dd = qq ? [...new Set([...A.map(a=>a.appt_date), ...Pn.map(p=>p.creation_date)].filter(Boolean))].sort().reverse() : days;
+      const totA = A.filter(a=>a.counts_as==='arrived').length, totP = Pn.filter(p=>p.counts_as_offer).length;
+      return `<div class="filterbar"><span class="chip sky">${A.length} פגישות ייעוץ · ${totA} הגיעו</span><span class="chip pink">${Pn.length} תוכניות · ${totP} נספרו כהצעה</span><span class="count">${qq?`מסונן לפי "${esc(qs)}"`:'לחיצה על יום פותחת את השמות'}</span></div>` +
+        (dd.map((d,i)=>{
+          const da = A.filter(a=>a.appt_date===d), dp = Pn.filter(p=>p.creation_date===d);
+          const arrived = da.filter(a=>a.counts_as==='arrived').length;
+          return `<details class="daygroup" ${i===0||qq?'open':''}><summary><span>${UI.dow(d)} ${UI.dmy(d)}</span><span class="cnt">${da.length} פגישות · ${arrived} הגיעו · ${dp.length} תוכניות · שולם ${money(dp.filter(p=>p.counts_in_paid).reduce((s,p)=>s+Number(p.total_after_discount||0),0))}</span></summary><div class="rows">` +
+            (da.length ? `<div class="scroll"><table><thead><tr><th>שעה</th><th>לקוחה</th><th>שירות</th><th>נקבע ע"י</th><th>סטטוס</th><th>נפתחה תוכנית</th></tr></thead><tbody>${da.map(a=>`<tr><td>${esc(a.appt_time||'')}</td><td>${esc(a.client_name)}</td><td>${esc(a.service||'')}</td><td>${esc(a.booked_by||'')}</td><td>${a.counts_as==='arrived'?'<span class="pos">✓ הגיעה</span>':a.counts_as==='no_show'?'<span class="neg">✗ '+esc(a.appointment_status)+'</span>':esc(a.appointment_status||'')}</td><td>${a.has_plan?'<span class="pos">✓</span>':(a.counts_as==='arrived'?'<span class="neg" title="אי-התאמה — הגיעה בלי הצעה">✗ אי-התאמה</span>':'<span class="dash">—</span>')}</td></tr>`).join('')}</tbody></table></div>` : '') +
+            (dp.length ? `<div class="scroll"><table><thead><tr><th>לקוחה</th><th>תוכנית</th><th>סוג</th><th>סך אחרי הנחה</th><th>שולם</th><th>%</th><th>הצעה</th><th>סגירה</th><th>ב"שולם"</th></tr></thead><tbody>${dp.map(p=>`<tr><td>${esc(p.client_name)}</td><td>${esc(p.plan_name)}</td><td>${esc(p.plan_type)}</td><td class="num">${money(p.total_after_discount)}</td><td class="num">${money(p.paid)}</td><td class="num">${p.pay_pct==null?'—':pct(p.pay_pct,0)}</td><td>${p.counts_as_offer?'<span class="pos">✓</span>':'<span class="dash">—</span>'}</td><td>${p.counts_as_closing?'<span class="pos">✓</span>':'<span class="dash">—</span>'}</td><td>${p.counts_in_paid?'<span class="pos">✓</span>':'<span class="dash">—</span>'}</td></tr>`).join('')}</tbody></table></div>` : '') +
+            `</div></details>`;
+        }).join('') || '<div class="empty">אין תוצאות</div>');
+    };
+    UI.modalBody().innerHTML = `<div class="filterbar"><label class="search-field"><svg class="ico" viewBox="0 0 16 16" fill="none"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input type="search" id="cSearch" placeholder="חיפוש לקוחה — לוודא שנקלטה…" autocomplete="off" /></label></div><div id="cBody">${draw('')}</div>`;
+    UI.modalBody().querySelector('#cSearch').addEventListener('input', UI.debounce(e=>{ UI.modalBody().querySelector('#cBody').innerHTML = draw(e.target.value); }, 150));
+  }catch(e){ UI.modalBody().innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+// --------------------------------------------------------------------------- אי-התאמות: אישור / אי-אישור
+function openMismatches(name){
+  const rowsNow = () => MM.filter(r=>!name || r.display_name===name);
+  const draw = () => { const rows = rowsNow(); return `<div class="info">אי-התאמה = פגישת ייעוץ שהלקוחה הגיעה אליה ולא נפתחה לה תוכנית תוך 14 יום. <b>לא מאושרת</b> נספרת כשתי פגישות שלא נסגרו; <b>מאושרת</b> (V) לא נספרת. ${UI.canWrite()?'לחיצה על V מאשרת, על X מבטלת אישור — ניתן לשינוי לשני הכיוונים.':'רק סופר אדמין מאשר.'}</div>` +
+    `<div class="scroll"><table><thead><tr><th>יועצת</th><th>תאריך</th><th>לקוחה</th><th>סטטוס</th><th>נקבע ע"י</th><th>מצב</th><th>אישור</th><th>מי / מתי</th></tr></thead><tbody>${
+    rows.map(r=>`<tr><td>${esc(r.display_name)}</td><td>${UI.dmy(r.appt_date)}</td><td>${esc(r.client_name)}</td><td>${esc(r.appointment_status)}</td><td>${esc(r.booked_by||'')}</td>` +
+      `<td>${r.approved===true?'<span class="chip good">✓ מאושרת</span>':r.approved===false?'<span class="chip bad">✗ לא מאושרת</span>':'<span class="chip warn">⏳ ממתינה — נספרת ×2</span>'}</td>` +
+      `<td><span class="vx"><button class="v ${r.approved===true?'on':''}" data-key="${esc(r.mismatch_key)}" data-val="true" ${UI.canWrite()?'':'disabled'} title="אשר">V</button><button class="x ${r.approved===false?'on':''}" data-key="${esc(r.mismatch_key)}" data-val="false" ${UI.canWrite()?'':'disabled'} title="לא מאושר">X</button></span></td>` +
+      `<td class="decided">${r.decided_by?`${esc(r.decided_by.split('@')[0])} · ${UI.time(r.decided_at)}${r.note?`<br>${esc(r.note)}`:''}`:''}</td></tr>`).join('') || '<tr><td colspan="8" class="dash">אין אי-התאמות 🎉</td></tr>'}</tbody></table></div>`; };
+  UI.modal({ title:`אי-התאמות${name?' — '+esc(name):''} · ${UI.heb(MONTH)}`, wide:true, body: draw() });
+  UI.modalBody().addEventListener('click', async e=>{
+    const b = e.target.closest('.vx button[data-key]'); if(!b || !UI.canWrite()) return;
+    const key = b.dataset.key, val = b.dataset.val==='true';
+    const cur = MM.find(r=>r.mismatch_key===key);
+    const same = cur && cur.approved===val;                      // לחיצה חוזרת על אותו כפתור = ביטול ההחלטה
+    const note = same ? null : prompt(val ? 'הערה לאישור (לא חובה):' : 'סיבה לאי-אישור (לא חובה):', cur?.note || '');
+    if(note===null && !same) return;
+    try{
+      await UI.rpc('decide_front_mismatch', { p_key:key, p_approved: same ? null : val, p_note: note || null });
+      UI.toast(same ? 'ההחלטה בוטלה' : (val ? 'אושר ✓' : 'סומן כלא מאושר'), 'good');
+      await renderConsultants();                                  // מרענן גם את MM
+      UI.modalBody().innerHTML = draw();
+    }catch(err){ UI.toast('שמירה נכשלה: '+err.message, 'bad'); }
+  });
+}
+
+// --------------------------------------------------------------------------- המכירות שלי
+// עסקה "גדולה" נמדדת מול הממוצע של אותה יועצת באותו חודש, ולא מול סכום קבוע.
+function saleBadge(amount, avg, maxAmount){
+  if(!amount) return '';
+  if(amount === maxAmount && amount >= avg * 1.2) return '<span class="chip lemon">🏆 העסקה הגדולה שלך החודש!</span>';
+  if(amount >= avg * 2)   return '<span class="chip lemon">🎉 פי ' + (amount/avg).toFixed(1) + ' מהממוצע שלך — מעולה!</span>';
+  if(amount >= avg * 1.5) return '<span class="chip mint">👏 הרבה מעל הממוצע שלך</span>';
+  if(amount >= avg * 1.2) return '<span class="chip mint">💪 מעל הממוצע שלך</span>';
+  return '';
+}
+function statusChip(r){
+  if(r.counts_in_paid) return '<span class="chip good">✓ נספרה</span>';
+  const paid = Number(r.paid||0), amt = Number(r.total_after_discount||0);
+  if(paid <= 0) return '<span class="chip">טרם שולם</span>';
+  if(isPartial(r)) return `<span class="chip warn">⚠ שולם חלקית — ${pct(r.pay_pct,0)}</span>`;
+  // שולם במלואו אבל לא נספר: מימון/עמלה או מתחת לסף — לא "חלקית"
+  if(/מימון|עמל/.test(r.plan_type||'') || /מימון|עמל/.test(r.plan_name||'')) return '<span class="chip">שולם · מימון — לא נספר</span>';
+  return '<span class="chip">שולם · לא נספר (מתחת לסף)</span>';
+}
+// "חלקית" = שולם משהו אבל פחות מהתוכנית (עד 5% סטייה זה תשלום מלא)
+function isPartial(r){
+  const paid = Number(r.paid||0), amt = Number(r.total_after_discount||0);
+  return paid > 0 && amt > 0 && paid < amt * 0.95;
+}
+function planText(r){
+  const c = (r.plan_contents||'').trim();
+  return (c ? esc(c) : `<span class="dash">${esc(r.plan_name||'')}</span>`) +
+         (r.plan_type ? ` <span class="sub">${esc(r.plan_type)}</span>` : '');
+}
+async function renderMine(){
+  const label = UI.label(); if(!label) return;
+  const prev = UI.prevMonth(MONTH);
+  const list = document.getElementById('mineList'), open = document.getElementById('openList');
+  list.innerHTML = '<div class="load">טוען…</div>'; open.innerHTML = '';
+  let rows, prevRows;
+  try{
+    [rows, prevRows] = await Promise.all([
+      rest(`front_my_clients?period_month=eq.${MONTH}&mode=eq.${mode()}&display_name=eq.${encodeURIComponent(label)}&order=creation_date.desc&limit=2000`),
+      rest(`front_my_clients?period_month=eq.${prev}&mode=eq.${mode()}&display_name=eq.${encodeURIComponent(label)}&order=creation_date.desc&limit=2000`),
+    ]);
+  }catch(e){ list.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+
+  const counted = rows.filter(r=>r.counts_in_paid);
+  const amounts = counted.map(r=>Number(r.total_after_discount||0)).filter(v=>v>0);
+  const avg = amounts.length ? amounts.reduce((a,b)=>a+b,0)/amounts.length : 0;
+  const maxAmount = amounts.length ? Math.max(...amounts) : 0;
+  const paidSum = counted.reduce((a,r)=>a+Number(r.total_after_discount||0),0);
+  const offers = rows.filter(r=>r.counts_as_offer);
+  const waitingNow = offers.filter(r=>!r.counts_in_paid);
+  const rule = rows.find(r=>r.paid_min_pay_pct!=null || r.paid_min_paid!=null) || {};
+  const ruleTxt = (rule.paid_min_pay_pct!=null || rule.paid_min_paid!=null)
+    ? `תוכנית נכנסת ל"שולם" רק כששולמו עליה ${rule.paid_min_pay_pct!=null?`לפחות ${pct(rule.paid_min_pay_pct,0)}`:''}` +
+      `${rule.paid_min_pay_pct!=null && rule.paid_min_paid!=null?' וגם ':''}` +
+      `${rule.paid_min_paid!=null?`יותר מ-${money(rule.paid_min_paid)}`:''}.`
+    : 'תוכנית נכנסת ל"שולם" לפי הכלל שהוגדר בדוח.';
+
+  document.getElementById('mineTiles').innerHTML = [
+    ['שולם עד כה', money(paidSum), `${counted.length} תוכניות שנספרו · זה המספר שנספר לך`],
+    ['הצעות', int(offers.length), `${waitingNow.length} עדיין ממתינות לתשלום`],
+    ['שולם בפועל', money(rows.reduce((a,r)=>a+Number(r.paid||0),0)), 'כל התקבולים על התוכניות שלי'],
+    ['ממוצע לעסקה שנספרה', money(avg), maxAmount?`הגדולה ביותר ${money(maxAmount)}`:''],
+  ].map(([k,v,m])=>`<div class="tile"><div class="k">${k}</div><div class="v small">${v}</div><div class="m">${m||''}</div></div>`).join('');
+  document.getElementById('mineNote').textContent = `${UI.heb(MONTH)} · ${rows.length} תוכניות, ${counted.length} נספרו`;
+  document.getElementById('mineRule').innerHTML =
+    `<b>איך נספרת מכירה:</b> ${esc(ruleTxt)} תוכנית שנפתחה ועדיין לא שולמה איננה נספרת ב"שולם עד כה" — היא מופיעה כ<b>ממתינה לתשלום</b>.`;
+
+  list.innerHTML = UI.dayGroups(rows, 'creation_date', dr =>
+    `<div class="scroll"><table><thead><tr><th>לקוחה</th><th>תוכנית</th><th>סכום</th><th>שולם</th><th>%</th><th>מצב</th><th></th></tr></thead><tbody>` +
+    dr.map(r=>{ const amt = Number(r.total_after_discount||0), paid = Number(r.paid||0);
+      const cls = r.counts_in_paid ? '' : (paid>0 ? 'rowband' : 'muted');
+      return `<tr class="${cls}"><td>${esc(r.client_name||'—')}</td><td title="${esc(r.plan_name||'')}">${planText(r)}</td>` +
+        `<td class="num"><b>${money(amt)}</b></td><td class="num">${money(paid)}</td><td class="num">${r.pay_pct==null?'—':pct(r.pay_pct,0)}</td>` +
+        `<td>${statusChip(r)}</td><td style="white-space:normal">${r.counts_in_paid ? saleBadge(amt, avg, maxAmount) : ''}</td></tr>`; }).join('') +
+    `</tbody></table></div>`,
+    { open:'first', empty:'עדיין אין תוכניות בחודש הזה',
+      summary:(d,dr)=>{ const c = dr.filter(x=>x.counts_in_paid);
+        return `${dr.length} תוכניות · נספרו ${c.length} · ${money(c.reduce((a,r)=>a+Number(r.total_after_discount||0),0))}` +
+          (c.some(r=>Number(r.total_after_discount) >= avg*1.5) ? ' · 🎉 יום חזק' : ''); } });
+
+  const waiting = [[MONTH, waitingNow], [prev, prevRows.filter(r=>r.counts_as_offer && !r.counts_in_paid)]];
+  const waitTotal = waiting.reduce((a,[,rs])=>a+rs.reduce((x,r)=>x+Number(r.total_after_discount||0),0),0);
+  const partialAll = waiting.reduce((a,[,rs])=>a+rs.filter(isPartial).length,0);
+  document.getElementById('openNote').textContent =
+    `${waiting[0][1].length + waiting[1][1].length} תוכניות · ${money(waitTotal)} ממתין · ${partialAll} שולמו חלקית`;
+  open.innerHTML = waiting.map(([m, rs]) => {
+    const sorted = rs.slice().sort((a,b)=>(Number(b.paid)>0)-(Number(a.paid)>0) || Number(b.total_after_discount)-Number(a.total_after_discount));
+    return `<details class="daygroup" ${m===MONTH?'open':''}><summary><span>${esc(UI.heb(m))}</span>` +
+      `<span class="cnt">${rs.length} ממתינות · ${money(rs.reduce((a,r)=>a+Number(r.total_after_discount||0),0))}` +
+      `${rs.some(isPartial)?` · ⚠ ${rs.filter(isPartial).length} שולמו חלקית`:''}</span></summary><div class="rows">` +
+      (sorted.length ? `<div class="scroll"><table><thead><tr><th>תאריך</th><th>לקוחה</th><th>תוכנית</th><th>סכום</th><th>שולם עד כה</th><th>%</th><th>חסר לתשלום</th><th>מצב</th></tr></thead><tbody>` +
+        sorted.map(r=>{ const amt=Number(r.total_after_discount||0), paid=Number(r.paid||0);
+          return `<tr class="${paid>0?'rowband':''}"><td>${UI.dm(r.creation_date)}</td><td>${esc(r.client_name||'—')}</td><td title="${esc(r.plan_name||'')}">${planText(r)}</td>` +
+          `<td class="num"><b>${money(amt)}</b></td><td class="num ${paid>0?'pos':'dash'}">${money(paid)}</td><td class="num">${r.pay_pct==null?'—':pct(r.pay_pct,0)}</td>` +
+          `<td class="num accent">${money(Math.max(0, amt-paid))}</td><td>${statusChip(r)}</td></tr>`; }).join('') +
+        `</tbody></table></div>` : '<div class="empty">אין תוכניות ממתינות — הכול שולם 👏</div>') +
+      `</div></details>`; }).join('');
+}
+
+// --------------------------------------------------------------------------- תוכניות המשך
+const FU_COLS = [
+  ['rank','#','rank',null], ['display_name','שם היועצת','name',null],
+  ['offers','סה״כ הצעות','int','followup_offers'], ['closings','סגירה','int','followup_closings'],
+  ['closing_pct','אחוז סגירה','pct',null], ['offer_sum','סכום הצעות','money','offer_sum'],
+  ['paid','שולם עד כה','bar','paid'], ['monthly_pace','קצב חודשי','money','monthly_pace_front'],
+];
+async function renderFollowup(){
+  const body = document.querySelector('#fuGrid tbody'); body.innerHTML = '<tr><td class="load">טוען…</td></tr>';
+  let rows; try{ rows = await rest(`front_followup?period_month=eq.${MONTH}&order=row_order`); }catch(e){ body.innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const sum = k => rows.reduce((a,r)=>a+Number(r[k]||0),0);
+  const tot = { display_name:'מסכם', offers:sum('offers'), closings:sum('closings'), offer_sum:sum('offer_sum'),
+                paid:sum('paid'), monthly_pace:sum('monthly_pace'), closing_pct: sum('offers')?sum('closings')/sum('offers'):0 };
+  // דירוג וגביעים לפי הסכום ששולם
+  const ranked = rows.filter(r=>Number(r.paid)>0).slice().sort((a,b)=>Number(b.paid)-Number(a.paid));
+  const rankOf = new Map(ranked.map((r,i)=>[r.display_name, i+1]));
+  const me = UI.label();
+  document.getElementById('fuTiles').innerHTML = [
+    `<div class="tile hero"><div class="k">שולם עד כה ${q('followup_paid')}</div><div class="v" data-count="${tot.paid}" data-fmt="money">${money(tot.paid)}</div><div class="m">${int(tot.closings)} סגירות מתוך ${int(tot.offers)} הצעות · ${pct(tot.closing_pct)}</div></div>`,
+    `<div class="tile"><div class="k">קצב — צפי לסוף החודש ${q('monthly_pace_front')}</div><div class="v" data-count="${tot.monthly_pace}" data-fmt="money">${money(tot.monthly_pace)}</div><div class="m">לפי ימי העבודה שעברו</div></div>`,
+    `<div class="tile"><div class="k">סכום ההצעות ${q('offer_sum')}</div><div class="v small" data-count="${tot.offer_sum}" data-fmt="money">${money(tot.offer_sum)}</div><div class="m">${int(tot.offers)} הצעות</div></div>`,
+    `<div class="tile"><div class="k">יועצות עם תוכנית המשך</div><div class="v small">${int(ranked.length)}</div><div class="m">מתוך ${int(rows.length)} בטבלה</div></div>`,
+  ].join('');
+  UI.countUp(document.getElementById('fuTiles'));
+  document.getElementById('fuPodiumCard').classList.toggle('hidden', ranked.length < 2);
+  document.getElementById('fuPodium').innerHTML = ranked.length
+    ? UI.podium(ranked.slice(0,3).map(r=>({ name:r.display_name, value:Number(r.paid),
+        sub:`${int(r.closings)} סגירות מתוך ${int(r.offers)} הצעות` })), {kind:'cup'})
+    : '<div class="empty">אין נתונים</div>';
+
+  document.querySelector('#fuGrid thead').innerHTML = `<tr>${FU_COLS.map(c=>`<th>${c[1]} ${c[3]?q(c[3]):''}</th>`).join('')}</tr>`;
+  const maxPaid = Math.max(...rows.map(r=>Number(r.paid)||0), 1);
+  const cell = (r, c, isTot) => {
+    const v = r[c[0]];
+    switch(c[2]){
+      case 'rank': return isTot ? '<td></td>' : `<td>${rankOf.has(r.display_name)?UI.rank(rankOf.get(r.display_name), {kind:'cup', what:'הסכום ששולם', me:r.display_name===me}):'<span class="dash">—</span>'}</td>`;
+      case 'name': return isTot ? '<td>מסכם</td>' : `<td>${esc(r.display_name)}${r.display_name===me?' <span class="chip lemon">אני</span>':''}</td>`;
+      case 'bar':  return `<td class="num">${UI.databar(v, maxPaid, 'accent', money(v))}</td>`;
+      case 'pct':  return `<td class="num hl"><b>${pct(v)}</b>${UI.star(Number(v) >= 0.8, 'מעל 80% סגירה')}</td>`;
+      case 'money':return `<td class="num ${Number(v)?'':'dash'}">${Number(v)?money(v):'—'}</td>`;
+      default:     return `<td class="num ${Number(v)?'':'dash'}">${Number(v)?int(v):'—'}</td>`;
+    }
+  };
+  const sorted = rows.slice().sort((a,b)=>Number(b.paid)-Number(a.paid) || Number(b.offers)-Number(a.offers));
+  body.innerHTML = (sorted.length
+      ? sorted.map(r=>`<tr class="${r.display_name===me?'me':''} ${Number(r.paid)?'':'muted'}">${FU_COLS.map(c=>cell(r,c,false)).join('')}</tr>`).join('') +
+        `<tr class="total">${FU_COLS.map(c=>cell(tot,c,true)).join('')}</tr>`
+      : `<tr><td class="dash" colspan="${FU_COLS.length}">אין תוכניות המשך בחודש הזה</td></tr>`);
+  document.getElementById('fuFoot').innerHTML =
+    `${rows.length} יועצות · נספרות רק תוכניות מסוג "תוכניות המשך" · הכסף כאן אינו נכלל ב"שולם עד כה" של המסכם ${q('followup_paid')}`;
+}
+
+// --------------------------------------------------------------------------- לוח יומי
+async function renderDaily(){
+  const body = document.querySelector('#dailyGrid tbody'); body.innerHTML = '<tr><td class="load">טוען…</td></tr>';
+  document.getElementById('lgLow').textContent = money(C.DAILY_STANDARD_LOW); document.getElementById('lgHigh').textContent = money(C.DAILY_STANDARD_HIGH);
+  let rows; try{ rows = await rest(`front_daily?period_month=eq.${MONTH}&order=creation_date,row_order&limit=5000`); }catch(e){ body.innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const inc = new Set(ROWS.filter(r=>r.include_in_totals).map(r=>r.display_name));
+  rows = rows.filter(r=>inc.has(r.display_name));
+  if(!rows.length){ body.innerHTML = '<tr><td class="dash">אין נתונים לחודש זה</td></tr>'; return; }
+  const days = [...new Set(rows.map(r=>r.creation_date))].sort();
+  const names = [...new Set(rows.map(r=>r.display_name))];
+  const byKey = new Map(rows.map(r=>[r.display_name+'|'+r.creation_date, r]));
+  UI.chart.lines('#dailyChart', { labels: days.map(UI.dm), series: names.map(n=>({ name:n, values: days.map(d=>{ const r=byKey.get(n+'|'+d); return r && r.offers ? Number(r.avg_paid_per_offer) : null; }) })), fmt: money, title:'ממוצע שולם לפגישה לפי יום' });
+  // עמודה ליום, מחולקת לפי יועצת — הגדולה ביותר בתחתית הערימה
+  const paidOf = n => days.reduce((a,d)=>{ const r=byKey.get(n+'|'+d); return a + (r?Number(r.paid||0):0); }, 0);
+  const stackNames = [...names].sort((a,b)=>paidOf(b)-paidOf(a));
+  UI.chart.stacked('#dailyBars', {
+    labels: days.map(UI.dm),
+    series: stackNames.map((n,i)=>({ name:n, color: UI.chart.seriesColor(i),
+      values: days.map(d=>{ const r=byKey.get(n+'|'+d); return r?Number(r.paid||0):0; }) })),
+    fmt: money, title:'שולם ליום לפי יועצת', height: 260 });
+  const daysR = [...days], max = Math.max(...rows.map(r=>Number(r.avg_paid_per_offer)||0), 1);
+  document.querySelector('#dailyGrid thead').innerHTML = `<tr><th>יועצת</th>${daysR.map(d=>`<th>${UI.dm(d)}</th>`).join('')}</tr>`;
+  body.innerHTML = names.map(n=>`<tr><td>${esc(n)}</td>${daysR.map(d=>{ const r=byKey.get(n+'|'+d); const v = r?Number(r.avg_paid_per_offer):null;
+    if(v==null||!isFinite(v)) return '<td class="dash">—</td>';
+    const bg = v>=C.DAILY_STANDARD_HIGH?'var(--good)':v>=C.DAILY_STANDARD_LOW?'var(--warn)':'var(--bad)'; const a = 0.16+0.55*Math.min(1,v/max);
+    return `<td class="num" title="${esc(n)} · ${UI.dm(d)} · ${r.offers} פגישות · שולם ${money(r.paid)}"><span class="cell" style="background:color-mix(in srgb, ${bg} ${Math.round(a*100)}%, transparent)">${UI.nf0.format(Math.round(v))}</span></td>`; }).join('')}</tr>`).join('');
+  const lastOf = {}; rows.forEach(r=>{ lastOf[r.display_name]=r; });
+  const roll = Object.values(lastOf).sort((a,b)=>Number(b.avg_7d||0)-Number(a.avg_7d||0));
+  const meLbl = UI.label(), tgtAvg = Number((TOT||{}).target_avg_per_offer||0);
+  const maxRoll = Math.max(...roll.map(r=>Number(r.avg_7d)||0), tgtAvg, 1);
+  document.querySelector('#rollGrid thead').innerHTML =
+    `<tr><th>#</th><th>יועצת</th><th>ממוצע 7 ימים ${q('avg_7d')}</th><th>ממוצע 3 ימים ${q('avg_3d')}</th><th>ממוצע ליום ${q('daily_avg_offer')}</th><th>מגמה</th><th>יום אחרון עם נתון</th></tr>`;
+  document.querySelector('#rollGrid tbody').innerHTML = roll.map((r,i)=>{
+    const a7 = Number(r.avg_7d)||0, a3 = Number(r.avg_3d)||0;
+    const cls = tgtAvg ? UI.paceCls(a7/tgtAvg) : 'accent';
+    const dir = a3 > a7*1.05 ? '<span class="pos" title="הממוצע ב-3 הימים האחרונים גבוה מהממוצע ב-7">▲ עולה</span>'
+              : a3 < a7*0.95 ? '<span class="neg" title="הממוצע ב-3 הימים האחרונים נמוך מהממוצע ב-7">▼ יורד</span>'
+              : '<span class="dash">יציב</span>';
+    return `<tr class="${r.display_name===meLbl?'me':''}">` +
+      `<td>${i<3 ? UI.rank(i+1, {kind:'cup', what:'ממוצע 7 ימים', me:r.display_name===meLbl}) : `<span class="rank rn"><span class="n">${i+1}</span></span>`}</td>` +
+      `<td>${esc(r.display_name)}${r.display_name===meLbl?' <span class="chip lemon">אני</span>':''}</td>` +
+      `<td class="num hl">${UI.databar(a7, maxRoll, cls, money(a7))}</td>` +
+      `<td class="num">${money(a3)}</td>` +
+      `<td class="num">${money(r.avg_paid_per_offer)}</td>` +
+      `<td>${UI.sparkline(rows.filter(x=>x.display_name===r.display_name).map(x=>Number(x.avg_paid_per_offer)||0))} ${dir}</td>` +
+      `<td class="num dash">${UI.dm(r.creation_date)}</td></tr>`; }).join('')
+    || `<tr><td class="dash" colspan="7">אין נתונים לחודש הזה</td></tr>`;
+  const rf = document.getElementById('rollFoot');
+  if(rf) rf.innerHTML = tgtAvg
+    ? `הצבע של הפס לפי היעד לממוצע להצעה (${money(tgtAvg)}): ירוק מעל היעד · כתום 70%–100% · אדום מתחת ${q('avg_paid_per_offer')}`
+    : 'לא הוגדר יעד לממוצע להצעה לחודש הזה';
+}
+
+// --------------------------------------------------------------------------- השוואה שנתית
+const ANN_METRICS = [['paid','שולם עד כה','money'],['offers','סה״כ הצעות','int'],['closings','סגירות','int'],['closing_pct','אחוז סגירת פגישות','pct'],['offer_sum','סכום הצעות','money'],['no_credits','ללא זיכויים','money'],['avg_paid_per_offer','ממוצע שולם להצעה','money'],['avg_paid_per_closing','ממוצע לעסקה שנסגרה','money'],['pct_of_target','אחוז מהיעד','pct'],['monthly_pace','קצב חודשי','money'],['not_opened','אי-התאמות לא מאושרות','int']];
+function annFmt(v,kind){ if(v==null) return '—'; return kind==='int'?int(v):kind==='pct'?pct(v):money(v); }
+async function renderAnnual(){
+  const body = document.querySelector('#annGrid tbody'); body.innerHTML='<tr><td class="load">טוען…</td></tr>';
+  const sel = document.getElementById('annMetric'), mx = document.getElementById('mxMetric');
+  if(!sel.options.length){ sel.innerHTML = ANN_METRICS.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join(''); mx.innerHTML = sel.innerHTML; mx.value='avg_paid_per_offer';
+    sel.onchange = drawAnnualChart; document.getElementById('annKind').onchange = drawAnnualChart; mx.onchange = drawAnnualMatrix; }
+  WEEK_PICK = null;
+  try{
+    const [totals, cons, week] = await Promise.all([
+      rest(`front_totals?mode=eq.${mode()}&order=period_month`), rest(`front_consultants?mode=eq.${mode()}&order=period_month,row_order&limit=5000`), rest('front_weekly?order=week_start&limit=5000'),
+    ]);
+    // יועצת רואה את המגמה של עצמה בלבד: ה"סה״כ" שלה הוא השורות שלה,
+    // ולא הסיכום של כל המחלקה.
+    const meLbl = UI.isStaff() ? UI.label() : null;
+    const mine = meLbl ? cons.filter(r => r.display_name === meLbl).sort((a,b)=>a.period_month.localeCompare(b.period_month)) : null;
+    ANN_CACHE = { totals: mine && mine.length ? mine : totals,
+                  cons: (meLbl ? cons.filter(r=>r.display_name===meLbl) : cons.filter(r=>r.include_in_totals)),
+                  week: meLbl ? week.filter(r=>r.display_name===meLbl) : week,
+                  mine: !!meLbl };
+  }catch(e){ body.innerHTML = `<tr><td class="err">שגיאת טעינה: ${esc(e.message)}</td></tr>`; return; }
+  const { totals } = ANN_CACHE;
+  if(!totals.length){ body.innerHTML='<tr><td class="dash">אין נתונים</td></tr>'; return; }
+  const S = k => totals.reduce((a,t)=>a+Number(t[k]||0),0);
+  const best = [...totals].sort((a,b)=>Number(b.paid)-Number(a.paid))[0];
+  document.getElementById('annTiles').innerHTML = [
+    ['סה״כ שולם', money(S('paid')), `${totals.length} חודשים`, 'paid'], ['סה״כ הצעות', int(S('offers')), '', 'offers'],
+    ['סה״כ סגירות', int(S('closings')), `${pct(S('offers')?S('closings')/S('offers'):null)} מההצעות`, 'closings'], ['סה״כ סכום הצעות', money(S('offer_sum')), '', 'offer_sum'],
+    ['ממוצע שולם לחודש', money(S('paid')/totals.length), '', null], ['החודש החזק', best?UI.shortMonth(best.period_month):'—', best?money(best.paid):'', null],
+  ].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div>${m?`<div class="m">${m}</div>`:''}</div>`).join('');
+  const cols = [...totals];
+  const curIdx = cols.findIndex(t=>t.period_month===MONTH), prevM = UI.prevMonth(MONTH);
+  const cur = cols[curIdx] || null;
+  // צפי לחודש הנוכחי: מדדי סכום וכמות מוכפלים ביחס ימי העבודה; יחסים (אחוז/ממוצע) נשארים
+  const wdE = Number((cur||{}).workdays_elapsed)||0, wdM = Number((cur||{}).workdays_in_month)||0;
+  const scale = (wdE && wdM) ? wdM/wdE : null;
+  const fc = (k, kind) => { if(!cur) return null; const v = Number(cur[k]); if(!isFinite(v)) return null;
+    return (kind==='pct' || k.startsWith('avg_')) ? v : (scale ? v*scale : v); };
+  const isOpen = MONTH === UI.thisMonth();
+  document.querySelector('#annGrid thead').innerHTML = `<tr><th>מדד</th>` +
+    (isOpen && cur ? `<th class="fcast">צפי ${UI.shortMonth(MONTH)} ${q('monthly_pace_front')}</th>` : '') +
+    cols.map(t=>`<th class="${t.period_month===MONTH?'curmonth':(t.period_month===prevM?'prevmonth':'')}">${UI.heb(t.period_month)}${t.period_month===MONTH?' <span class="sub">החודש</span>':''}</th>`).join('') + `</tr>`;
+  // פס בתוך התא — יחסי לערך הגבוה באותה שורה, צבע לפי המדד
+  const barCls = ['c1','c2','c3','c4','c5','c6'];
+  body.innerHTML = ANN_METRICS.map(([k,lbl,kind],mi)=>{
+    const vals = cols.map(t=>Number(t[k])).filter(v=>isFinite(v));
+    const max = Math.max(...vals.map(Math.abs), 0) || 1;
+    const cell = (t) => { const v = Number(t[k]); const w = isFinite(v) ? Math.min(100, Math.abs(v)/max*100) : 0;
+      const cls = [t.period_month===MONTH?'curmonth':(t.period_month===prevM?'prevmonth':'')].filter(Boolean).join(' ');
+      return `<td class="num ${cls}">${isFinite(v) ? `<span class="rowbar ${barCls[mi%6]}" style="--w:${w.toFixed(1)}%"><i>${annFmt(v,kind)}</i></span>` : '<span class="dash">—</span>'}</td>`; };
+    const f = fc(k, kind);
+    return `<tr><td>${lbl}</td>` +
+      (isOpen && cur ? `<td class="num fcast">${f==null?'<span class="dash">—</span>':`<b>${annFmt(f,kind)}</b>`}</td>` : '') +
+      cols.map(cell).join('') + `</tr>`;
+  }).join('');
+  document.getElementById('annFoot').textContent = `${totals.length} חודשים · ${UI.heb(totals[0].period_month)} – ${UI.heb(totals[totals.length-1].period_month)} · ` + (mode()==='excel'?'ללא תוכניות המשך (כמו בגיליון)':'כולל תוכניות המשך') + (ANN_CACHE.mine ? ' · הנתונים שלך בלבד' : '');
+  drawAnnualChart(); drawAnnualMatrix(); drawWeek();
+}
+function drawAnnualChart(){
+  if(!ANN_CACHE) return;
+  const key = document.getElementById('annMetric').value, meta = ANN_METRICS.find(m=>m[0]===key), kind = document.getElementById('annKind').value;
+  const fmt = v=>annFmt(v,meta[2]), yfmt = meta[2]==='pct'?v=>pct(v,0):meta[2]==='int'?int:v=>UI.k(v,{plain:true});
+  const pts = ANN_CACHE.totals.map(t=>({m:t.period_month, v:Number(t[key])})).filter(d=>isFinite(d.v));
+  if(kind==='lines') UI.chart.lines('#annChart', { labels: pts.map(p=>UI.shortMonth(p.m)), series:[{name:meta[1], values:pts.map(p=>p.v)}], fmt, yfmt, area:true, title:meta[1] });
+  else UI.chart.bars('#annChart', { items: pts.map(p=>({label:UI.shortMonth(p.m), value:p.v, sel:p.m===MONTH, cls:'c1'})), fmt, yfmt, title:meta[1] });
+}
+function drawAnnualMatrix(){
+  if(!ANN_CACHE) return;
+  const key = document.getElementById('mxMetric').value, meta = ANN_METRICS.find(m=>m[0]===key);
+  const { cons, totals } = ANN_CACHE; const cols = totals.map(t=>t.period_month);
+  const names = [...new Set(cons.map(r=>r.display_name))]; const byKey = new Map(cons.map(r=>[r.display_name+'|'+r.period_month, r]));
+  const vals = cons.map(r=>Number(r[key])).filter(v=>isFinite(v)); const max = Math.max(...vals,0), min = Math.min(...vals,0), span = (max-min)||1;
+  // ממוצעי כסף נצבעים בסולם קבוע (סוכם 21/09): <4,000 אדום · 4,500 ורוד · 5,000 כתום ·
+  // 5,500 צהוב · 6,000 ירוק בהיר · מעלה ירוק חזק ומנצנץ. שאר המדדים — הצללה יחסית.
+  const fixed = key.startsWith('avg_');
+  const stepCls = v => v < 4000 ? 's1' : v < 4500 ? 's2' : v < 5000 ? 's3' : v < 5500 ? 's4' : v < 6000 ? 's5' : 's6';
+  const val = (n,m) => { const r=byKey.get(n+'|'+m); const v=r?Number(r[key]):null; return (v==null||!isFinite(v))?null:v; };
+  const aggOf = n => { let sum=0, seen=0; cols.forEach(m=>{ const v=val(n,m); if(v!=null){ sum+=v; seen++; } });
+    return (meta[2]==='pct' || key.startsWith('avg') || key==='monthly_pace') ? (seen?sum/seen:null) : (seen?sum:null); };
+  const cur = n => val(n, MONTH);
+  // סדר: מי שיש לו נתון החודש קודם (מהגבוה לנמוך), ואחר כך השאר לפי הממוצע השנתי
+  const sorted = names.slice().sort((a,b)=>{
+    const ca=cur(a), cb=cur(b);
+    if((ca==null)!==(cb==null)) return ca==null ? 1 : -1;
+    if(ca!=null && cb!=null && ca!==cb) return cb-ca;
+    return (aggOf(b)??-Infinity) - (aggOf(a)??-Infinity);
+  });
+  const medalOf = new Map(sorted.filter(n=>cur(n)!=null).slice(0,3).map((n,i)=>[n,i+1]));
+  const cupOf = new Map(names.slice().filter(n=>aggOf(n)!=null).sort((a,b)=>aggOf(b)-aggOf(a)).slice(0,3).map((n,i)=>[n,i+1]));
+  const aggLabel = (meta[2]==='pct' || key.startsWith('avg') || key==='monthly_pace') ? 'ממוצע שנתי' : 'סה״כ שנתי';
+  document.querySelector('#annMatrix thead').innerHTML =
+    `<tr><th>יועצת</th>${cols.map(m=>`<th class="${m===MONTH?'curmonth':''}">${UI.heb(m)}${m===MONTH?' <span class="sub">החודש</span>':''}</th>`).join('')}<th class="yearcol">🏆 ${aggLabel}</th></tr>`;
+  document.querySelector('#annMatrix tbody').innerHTML = sorted.map(n=>{
+    const tds = cols.map(m=>{ const v = val(n,m);
+      if(v==null) return `<td class="num dash ${m===MONTH?'curmonth':''}">—</td>`;
+      const cls = fixed ? `step ${stepCls(v)}` : '';
+      const style = fixed ? '' : ` style="background:color-mix(in srgb, var(--accent) ${Math.round((0.10+0.55*((v-min)/span))*100)}%, transparent)"`;
+      return `<td class="num ${m===MONTH?'curmonth':''}"><span class="cell ${cls}"${style}>${annFmt(v,meta[2])}</span></td>`; }).join('');
+    const agg = aggOf(n), cup = cupOf.get(n), medal = medalOf.get(n);
+    return `<tr class="${n===UI.label()?'me':''}">` +
+      `<td>${medal?UI.rank(medal, {kind:'medal', noNum:true, what:'החודש', me:n===UI.label()})+' ':''}${esc(n)}</td>${tds}` +
+      `<td class="num yearcol"><span class="cell ${fixed && agg!=null ? 'step '+stepCls(agg) : ''}"><b>${annFmt(agg,meta[2])}</b></span>${cup?' '+UI.rank(cup, {kind:'cup', noNum:true, what:aggLabel}):''}</td></tr>`;
+  }).join('') || '<tr><td class="dash">אין נתונים</td></tr>';
+}
+// מי מוצגת בגרף השבועי — בררת המחדל: יועצות פעילות (מעל 30 פגישות ייעוץ בשלושת
+// החודשים האחרונים, או מעל 300 בכל התקופה). אפשר לסמן/לבטל כל אחת בלחיצה.
+let WEEK_PICK = null;
+function weekMeetings(){
+  const m = new Map();                      // שם → {recent, total}
+  const last3 = [MONTH, UI.prevMonth(MONTH), UI.prevMonth(UI.prevMonth(MONTH))];
+  (ANN_CACHE.cons||[]).forEach(r=>{
+    const meet = (Number(r.offers)||0) + (Number(r.not_opened)||0);
+    const e = m.get(r.display_name) || {recent:0, total:0};
+    e.total += meet; if(last3.includes(r.period_month)) e.recent += meet;
+    m.set(r.display_name, e);
+  });
+  return m;
+}
+const weekIsActive = (e) => !!e && (e.recent > 30 || e.total > 300);
+function drawWeek(){
+  const week = (ANN_CACHE.week||[]).filter(r=>ANN_CACHE.cons.some(c=>c.display_name===r.display_name));
+  const weeks = [...new Set(week.map(r=>r.week_start))].sort();
+  const names = [...new Set(week.map(r=>r.display_name))];
+  const meets = weekMeetings();
+  if(!WEEK_PICK){
+    const act = names.filter(n=>weekIsActive(meets.get(n)));
+    WEEK_PICK = new Set(act.length ? act : names);
+  }
+  const shown = names.filter(n=>WEEK_PICK.has(n));
+  const colorOf = n => UI.chart.seriesColor(names.indexOf(n));
+  document.getElementById('weekChips').innerHTML = names.map(n=>{
+    const e = meets.get(n) || {recent:0,total:0};
+    return `<button class="pick ${WEEK_PICK.has(n)?'on':''}" type="button" data-n="${esc(n)}" style="--pick-c:${colorOf(n)}" ` +
+      `title="${esc(n)} · ${int(e.recent)} פגישות ב-3 החודשים האחרונים · ${int(e.total)} בכל התקופה"><span class="sw" style="background:${colorOf(n)}"></span>${esc(n)}</button>`;
+  }).join('');
+  document.getElementById('weekCount').textContent = `${shown.length} מתוך ${names.length}`;
+  document.querySelectorAll('#weekChips .pick').forEach(b=>b.onclick=()=>{
+    const n = b.dataset.n; WEEK_PICK.has(n) ? WEEK_PICK.delete(n) : WEEK_PICK.add(n); drawWeek(); });
+  document.getElementById('weekAll').onclick = ()=>{ WEEK_PICK = new Set(names); drawWeek(); };
+  document.getElementById('weekActive').onclick = ()=>{ WEEK_PICK = new Set(names.filter(n=>weekIsActive(meets.get(n)))); drawWeek(); };
+  if(!shown.length){ document.getElementById('weekChart').innerHTML = '<div class="empty">לא נבחרה אף יועצת</div>'; return; }
+  UI.chart.lines('#weekChart', { labels: weeks.map(UI.weekRange),
+    series: shown.map(n=>({ name:n, color: colorOf(n),
+      values: weeks.map(w=>{ const r=week.find(x=>x.week_start===w && x.display_name===n); return r?Number(r.paid):null; }) })),
+    fmt: money, title:'לפי שבועות' });
+}
+
+// --------------------------------------------------------------------------- השלמות מחודש שעבר (תת-כותרת)
+async function renderCompletions(){
+  const body = document.querySelector('#cmpGrid tbody'); body.innerHTML='<tr><td class="load">טוען…</td></tr>';
+  let persons, months;
+  try{ [persons, months] = await Promise.all([rest(`completion_persons?period_month=eq.${MONTH}&department=eq.front&order=total.desc`), rest('completion_months')]); }
+  catch(e){ body.innerHTML=`<tr><td class="err">${esc(e.message)}</td></tr>`; return; }
+  const mi = months.find(m=>m.period_month===MONTH);
+  const lateBase = mi && mi.has_base && new Date(mi.base_taken_at).getUTCDate() > 2;
+  document.getElementById('cmpNote').textContent = !mi || !mi.has_base
+    ? 'אין צילום בסיס לחודש הזה — ההשלמות יתחילו להיספר מהצילום הבא (1 בחודש)'
+    : lateBase
+      ? `בסיס: צילום מ-${UI.time(mi.base_taken_at)} — מאוחר מ-1 בחודש, ולכן תשלומים שקדמו לו אינם נספרים`
+      : `בסיס: צילום מ-${UI.time(mi.base_taken_at)}`;
+  const tot = persons.reduce((s,p)=>s+Number(p.total||0),0);
+  document.getElementById('cmpTiles').innerHTML = [
+    ['סה"כ השלמות — יועצות', money(tot), `${persons.length} יועצות`, 'completion_total'],
+    ['מזה אוטומטי', money(persons.reduce((s,p)=>s+Number(p.auto_total||0),0)), 'מההפרש מול הצילום', 'completion_delta'],
+    ['מזה ידני', money(persons.reduce((s,p)=>s+Number(p.manual_total||0),0)), 'שורות שהוסיף סופר אדמין', null],
+    ['שורות שהוצאו מהחישוב', int(persons.reduce((s,p)=>s+Number(p.n_excluded||0),0)), '"אל תכניס לחישוב"', null],
+  ].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div><div class="m">${m}</div></div>`).join('');
+  document.querySelector('#cmpGrid thead').innerHTML = `<tr><th>יועצת</th><th>סה"כ השלמות ${q('completion_total')}</th><th>אוטומטי</th><th>ידני</th><th>שורות</th><th>הוצאו</th><th></th></tr>`;
+  body.innerHTML = persons.map(p=>`<tr class="${p.display_name===UI.label()?'me':''}"><td>${esc(p.display_name)}</td><td class="num"><b>${money(p.total)}</b></td><td class="num">${money(p.auto_total)}</td><td class="num">${money(p.manual_total)}</td><td class="num">${int(p.n_rows)}</td><td class="num">${int(p.n_excluded)}</td><td><a class="btn ghost xs" href="completions.html#${encodeURIComponent(p.staff_key)}">פירוט ההפרש</a></td></tr>`).join('') || '<tr><td colspan="7" class="dash">אין השלמות החודש</td></tr>';
+}
+
+// --------------------------------------------------------------------------- הגדרות (סופר אדמין)
+async function renderSetup(){
+  if(!UI.canWrite()) return;
+  const [m] = await Promise.all([rest(`edit_front_month?period_month=eq.${MONTH}`)]);
+  const mc = m[0] || {};
+  const F = [['target_avg_per_offer','יעד ממוצע שולם להצעה','front_avg'],['double_meetings','השלמה פגישות כפולות','front_month_param'],['clients_left_month','הלכו','front_month_param'],['no_show','אי הופעה','front_month_param'],['taken_by_other','התקבל ע״י מישהי אחרת','front_month_param'],['missing_documentation','סה״כ חוסרי תיעוד','front_month_param'],['non_center_meetings','פגישות לא של המוקד','front_month_param']];
+  document.getElementById('monthEdit').innerHTML = F.map(([k,l])=>`<div class="kv"><span class="lbl">${l}</span><span class="val"><input class="edit" type="number" step="any" value="${mc[k]??''}" data-k="${k}" /></span></div>`).join('');
+  document.querySelectorAll('#monthEdit input.edit').forEach(i=>i.onchange=async()=>{ const f=F.find(x=>x[0]===i.dataset.k); try{ await UI.rpc('set_target',{p_kind:f[2], p_month:MONTH, p_key:i.dataset.k, p_amount:i.value===''?null:Number(i.value)}); i.classList.add('saved'); UI.toast('נשמר ✓','good'); await renderConsultants(); }catch(e){ UI.toast('שמירה נכשלה: '+e.message,'bad'); } });
+  document.getElementById('monthNotes').value = mc.notes || TOT.notes || '';
+  document.getElementById('saveNotes').onclick = async()=>{ try{ await UI.rpc('set_target',{p_kind:'front_month_notes', p_month:MONTH, p_note:document.getElementById('monthNotes').value}); UI.toast('ההערות נשמרו ✓','good'); await renderConsultants(); }catch(e){ UI.toast('שמירה נכשלה: '+e.message,'bad'); } };
+  const cfg = await rest(`edit_front_consultant?period_month=eq.${MONTH}&order=block,row_order&select=config_id,display_name,aliases,include_in_totals,block`);
+  document.querySelector('#consGrid thead').innerHTML = '<tr><th>יועצת</th><th>שמות ברפיד</th><th>נספרת בסיכומים</th></tr>';
+  document.querySelector('#consGrid tbody').innerHTML = cfg.map(r=>`<tr><td>${esc(r.display_name)}</td><td class="dash">${esc((r.aliases||[]).join(', '))}</td><td><input type="checkbox" data-id="${r.config_id}" ${r.include_in_totals?'checked':''} /></td></tr>`).join('');
+  document.querySelectorAll('#consGrid input[type=checkbox]').forEach(c=>c.onchange=async()=>{ try{ await rest(`edit_front_consultant?config_id=eq.${c.dataset.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({include_in_totals:c.checked, updated_at:new Date().toISOString(), updated_by:'dashboard'})}); UI.toast('נשמר ✓','good'); ANN_CACHE=null; await renderConsultants(); }catch(e){ UI.toast('שמירה נכשלה: '+e.message,'bad'); c.checked=!c.checked; } });
+}
+
+
+
+document.addEventListener('access-ready', () => {
+  UI.applyVisibility();
+  // הטאב האישי נפתח רק ליועצת שיש לה שורה בדוח (כולל תצוגה מקדימה כיועצת)
+  const b = document.querySelector('#tabs button[data-tab="mine"]');
+  if(b) b.classList.toggle('hidden', !UI.label());
+});
+init().catch(e=>{ document.getElementById('tiles').innerHTML = `<div class="err">שגיאת חיבור ל-Supabase: ${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

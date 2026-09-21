@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>מתאמות פגישות · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>מתאמות פגישות</h1>
+  <select id="month" title="חודש"></select>
+  <span class="sub" id="asof"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="tv"      aria-selected="true">סיכום לטלויזיה</button>
+    <button data-tab="summary" aria-selected="false">סיכום למנהל</button>
+    <button data-tab="daily"   aria-selected="false">יומי</button>
+    <button data-tab="future"  aria-selected="false">עתידי ביומן</button>
+    <button data-tab="annual"  aria-selected="false">השוואה שנתית</button>
+    <button data-tab="setup"   aria-selected="false" data-write>הגדרות</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="dept-tabs" id="teamTabs"></div>
+  <div class="info todo hidden" id="leadsTodo" data-write>📌 <b>תזכורת:</b> גיליון הלידים (כמות לידים לכל מתאמת) עדיין לא מחובר — בינתיים הלידים מוזנים ידנית ב"הגדרות". מקום החיבור: הגדרות › גיליון לידים.</div>
+
+  <!-- ================= סיכום לטלויזיה ================= -->
+  <section id="tab-tv">
+    <div class="tiles" id="tvTiles"></div>
+    <div class="cols two">
+      <div class="card pastel-pink">
+        <h2>מיצוי לידים <span class="note">כמה מהלידים הפכו לפגישה ולעסקה</span></h2>
+        <div class="row" style="justify-content:space-around;padding:6px 0 10px">
+          <div class="big-pct" id="ringMeet"></div>
+          <div class="big-pct" id="ringDeal"></div>
+        </div>
+      </div>
+      <div class="card pastel-lemon">
+        <h2>המקומות הראשונים <span class="note">לפי הגעות של ייעוצים</span></h2>
+        <div id="podium"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>סיכום לטלויזיה <span class="note">לחיצה על שם פותחת פירוט יומי, ומשם את השמות</span></h2>
+      <div class="scroll"><table id="tv2" class="rank-first"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>הגעות לפי מתאמת <span class="note">קצב מול יעד</span></h2>
+      <div class="chartwrap" id="tvChart"></div>
+    </div>
+    <details class="card fold" id="myFold">
+      <summary><span id="myTitle">הלקוחות שלי — שמות ותאריכים</span><span class="note" id="myNote">לחיצה לפתיחה</span></summary>
+      <div class="filterbar">
+        <label class="search-field" title="חיפוש"><svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input type="search" id="mySearch" placeholder="שם לקוחה, תאריך, שירות…" autocomplete="off" /></label>
+        <select id="myFilter" title="סינון"><option value="all">הכל</option><option value="gap">רק חוסרים — לא הגיעה או לא נסגרה</option><option value="noarr">לא נספרה כהגעה</option><option value="noclose">הגיעה אך לא נסגרה</option><option value="future">עתידי</option></select>
+        <span class="count" id="myCount"></span>
+      </div>
+      <div class="err hidden" id="myErr"></div>
+      <div id="myGroups"></div>
+    </details>
+    <div class="foot" id="tvFoot"></div>
+  </section>
+
+  <!-- ================= סיכום למנהל ================= -->
+  <section id="tab-summary" class="hidden">
+    <div class="card">
+      <h2>מדדים חודשיים <span class="note">מדד בשורה, מתאמת בעמודה</span></h2>
+      <div class="scroll"><table id="sumGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card pastel-pink">
+      <h2>מיצוי לידים לפי מתאמת <span class="note">הנתון החשוב ביותר</span></h2>
+      <div class="row" id="rings" style="justify-content:space-around;flex-wrap:wrap;padding:8px 0"></div>
+    </div>
+    <div class="card">
+      <h2>תרומה של כל מתאמת להישג הכללי</h2>
+      <div class="scroll"><table id="shareGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= יומי ================= -->
+  <section id="tab-daily" class="hidden">
+    <div class="card">
+      <h2>הגעות לפי יום <span class="note">נקודות מחוברות, מתאמת לכל קו</span></h2>
+      <div class="chartwrap" id="dailyChart"></div>
+    </div>
+    <div class="card">
+      <h2>קביעות · הגעות · סגירות לפי יום</h2>
+      <div class="scroll"><table id="dailyGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= עתידי ================= -->
+  <section id="tab-future" class="hidden">
+    <div class="tiles" id="futTiles"></div>
+    <div class="card">
+      <h2>עתידי ביומן <span class="note">פגישות ייעוץ שטרם התקיימו, לפי יום</span></h2>
+      <div class="chartwrap" id="futChart"></div>
+      <div class="scroll"><table id="futGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= השוואה שנתית ================= -->
+  <section id="tab-annual" class="hidden">
+    <div class="tiles" id="annTiles"></div>
+    <div class="card">
+      <h2>מדדים לפי חודש <span class="note">ערכי raw (בלי הוספות ידניות)</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>מגמה חודשית <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="annMetric"></select><select id="annKind"><option value="bars">עמודות</option><option value="lines">נקודות מחוברות</option></select></label></h2>
+      <div class="chartwrap" id="annChart"></div>
+    </div>
+    <!-- טבלת השוואה בין מתאמות — לא מוצגת למתאמת בודדת -->
+    <div class="card" data-level="super_admin,manager">
+      <h2>לפי מתאמת ולפי חודש <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="mxMetric"></select></label></h2>
+      <div class="scroll"><table id="annMatrix"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="annFoot"></div>
+  </section>
+
+  <!-- ================= הגדרות ================= -->
+  <section id="tab-setup" class="hidden">
+    <div class="card pastel-lavender">
+      <h2>יעדים, לידים והוספות ידניות <span class="note">סופר אדמין · שינוי נשמר מיד</span></h2>
+      <div class="info">היעד וכמות הלידים לכל מתאמת. ההוספות הידניות (פגישות/הגעות/סגירות) מתווספות למספרים מרפיד ומופיעות בטבלאות בנפרד מה-raw. השיוך לצוות קובע מי רואה את מי.</div>
+      <div class="scroll"><table id="editGrid"><thead></thead><tbody></tbody></table></div>
+      <div class="compose"><button class="btn ghost sm" id="syncReps" type="button">🔄 זיהוי מתאמות חדשות מהיומן</button><span class="sub">מתאמת עם 3 קביעות ייעוץ ומעלה החודש נכנסת לטבלה אוטומטית</span></div>
+    </div>
+    <div class="card">
+      <h2>גיליון לידים <span class="note">חיבור עתידי</span></h2>
+      <div class="info todo">כאן יתחבר הגיליון שבו כמויות הלידים לכל מתאמת. עד אז — הלידים מוזנים ידנית למעלה. אפשר לשמור כבר עכשיו את כתובת הגיליון:</div>
+      <div class="compose"><input type="text" id="leadsUrl" placeholder="https://docs.google.com/spreadsheets/…" style="flex:1 1 320px" /><button class="btn sm" id="saveLeadsUrl" type="button">שמירה</button></div>
+    </div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script>
+const rest = UI.rest, esc = UI.esc, int = UI.int, one = UI.one, pct = UI.pct, q = UI.q, money = UI.money;
+let FIFTY_TARGET = null;   // יעד צוותי לקביעות 50 ₪ (ניתן לעריכה)
+let MONTH = null, MONTHS = [], ROWS = [], TOT = null, TEAMS = [], TEAM = null, FUT = [], AWARDS = [], ANN_CACHE = null, MY_ROWS = [];
+const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='summary') renderSummary(); if(t==='comp') renderComp(); if(t==='setup') renderSetup(); });
+const active = () => ROWS.filter(r => r.block===2 && !r.is_total_row && (TEAM==='all' || r.team===TEAM) && (Number(r.bookings_raw)>0 || Number(r.future_count)>0 || Number(r.fifty_count)>0 || r.rep===UI.label()));
+const sumOf = (rows,k) => rows.reduce((s,r)=>s+Number(r[k]||0),0);
+const SORT = { key: null, dir: null };   // מיון לפי לחיצה על כותרת
+let PREV_ROWS = [];                      // שורות החודש הקודם, ל"חודש שעבר" באריחים
+const prevTeam = () => PREV_ROWS.filter(r => TEAM==='all' || r.team===TEAM);
+
+async function init(){
+  const months = await rest('phone_months?select=period_month&order=period_month.desc');
+  MONTHS = months.map(m=>m.period_month);
+  const sel = document.getElementById('month'); UI.fillMonths(sel, MONTHS, MONTHS[0]);
+  sel.onchange = ()=>{ MONTH = sel.value; load(); };
+  MONTH = MONTHS[0];
+  if(!MONTH){ document.getElementById('tvTiles').innerHTML='<div class="err">אין נתונים.</div>'; return; }
+  TEAMS = await rest('phone_teams?order=sort');
+  try{ await UI.rpc('phone_sync_reps', { p_month: MONTH }); }catch(_){}
+  await load();
+}
+async function load(){
+  const [rows, tot, fut, aw, fiftyTgt, prevRows] = await Promise.all([
+    rest(`phone_monthly?period_month=eq.${MONTH}&order=block,row_order`),
+    rest(`phone_totals?period_month=eq.${MONTH}`).catch(()=>[]),
+    rest(`phone_future?period_month=eq.${MONTH}&select=future_date,rep,future_count,team`),
+    rest(`competition_awards?period_month=eq.${MONTH}`).catch(()=>[]),
+    rest(`phone_targets?period_month=eq.${MONTH}`).catch(()=>[]),
+    // החודש הקודם — ל"חודש שעבר" באריחים
+    rest(`phone_monthly?period_month=eq.${UI.prevMonth(MONTH)}&block=eq.2&select=rep,team,arrivals_raw,closings_raw,bookings_raw,fifty_count,leads`).catch(()=>[]),
+  ]);
+  ROWS = rows; TOT = tot.find(x=>x.block===2) || null; FUT = fut; AWARDS = aw; PREV_ROWS = prevRows||[];
+  FIFTY_TARGET = (fiftyTgt && fiftyTgt[0]) ? Number(fiftyTgt[0].fifty_target) : null;
+  document.getElementById('asof').textContent = `${one(rows[0]?.workdays_elapsed)} מתוך ${one(rows[0]?.workdays_in_month)} ימי עבודה · נכון ל-${new Date().toLocaleDateString('he-IL')}`;
+  const teamsHere = new Map();
+  rows.filter(r=>r.block===2 && !r.is_total_row).forEach(r=>{ const t=TEAMS.find(x=>x.team_key===r.team); teamsHere.set(r.team, {title: t?t.title:r.team, sort:t?t.sort:99, n:(teamsHere.get(r.team)?.n||0)+1}); });
+  // צוות בלי מתאמות אינו מקבל לשונית — "תיאום פגישות סיכום" היה ריק וזהה ל"כל הצוותים".
+  // צוות ריק שנבחר במפורש נשאר מוצג, כדי לא להיעלם באמצע עבודה.
+  TEAMS.forEach(t=>{ if(!teamsHere.has(t.team_key) && t.team_key===TEAM) teamsHere.set(t.team_key,{title:t.title, sort:t.sort, n:0}); });
+  const list = [...teamsHere.entries()].sort((a,b)=>a[1].sort-b[1].sort);
+  if(!TEAM || (TEAM!=='all' && !teamsHere.has(TEAM))) TEAM = list.length>1 ? 'all' : (list[0]?.[0]||'phone');
+  if(list.length<=1) TEAM = list[0]?.[0] || 'phone';
+  document.getElementById('teamTabs').innerHTML = (list.length>1 ? `<button data-team="all" aria-selected="${TEAM==='all'}">כל הצוותים<small>${rows.filter(r=>r.block===2&&!r.is_total_row).length} מתאמות</small></button>` : '') +
+    list.map(([k,t])=>`<button data-team="${esc(k)}" aria-selected="${TEAM===k}">${esc(t.title)}<small>${t.n} מתאמות</small></button>`).join('');
+  document.querySelectorAll('#teamTabs button').forEach(b=>b.onclick=()=>{ TEAM=b.dataset.team; document.querySelectorAll('#teamTabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b))); renderAll(); });
+  const leadsUrl = (UI.access().settings||{}).phone_leads_sheet_url;
+  const todo = document.getElementById('leadsTodo'); if(todo) todo.classList.toggle('hidden', !!leadsUrl || !UI.canWrite());
+  renderAll();
+}
+function renderAll(){
+  renderTV(); const t = tabs.current();
+  if(t==='summary') renderSummary(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='annual') renderAnnual(); if(t==='comp') renderComp(); if(t==='setup') renderSetup();
+  renderMine();
+}
+
+// --------------------------------------------------------------------------- סיכום לטלויזיה
+const TV_COLS = [
+  ['rank','#','rank','rank'], ['rep','מתאמת','name',null], ['fifty_count','קביעת 50 ₪','bar50','fifty_rep'],
+  ['bookings_raw','קביעות','barb','bookings'], ['arrivals_raw','הגעות של ייעוצים','bar','arrivals'], ['closings_raw','נסגרו 🥇','barc','phone_closings'], ['close_pct_raw','אחוז סגירה','pcth','close_pct_raw'],
+  ['appointments_target','יעד הגעות','tgt',null], ['target_attainment','עמידה ביעד','meter','target_attainment'], ['arrivals_monthly_pace','קצב הגעות (צפי)','pace','pace_phone'],
+  ['daily_arrivals_needed','הגעות ליום כדי להגיע ליעד','one','daily_needed'], ['future_count','עתידי ביומן','int','future'],
+  ['leads','לידים','int','leads'], ['leads_to_meeting_pct','מיצוי לידים לפגישה','pctb','leads_to_meeting'], ['leads_to_deal_pct','מיצוי לידים לעסקה','pctb','leads_to_deal'], ['comp','בונוס תחרויות','comp','competition'],
+];
+function renderTV(){
+  const natural = active().slice().sort((a,b)=>Number(b.arrivals_raw)-Number(a.arrivals_raw));
+  const rankByArrivals = new Map(natural.map((r,i)=>[r.rep, i+1]));
+  // שני דירוגים, כמו ביועצות: 🏆 גביע להגעות (העמודה הראשונה) · 🥇 מדליה לסגירות
+  const byClose = active().filter(r=>Number(r.closings_raw)>0).slice().sort((a,b)=>Number(b.closings_raw)-Number(a.closings_raw));
+  const medalOf = new Map(byClose.map((r,i)=>[r.rep, i+1]));
+  const rows = UI.applySort(natural, SORT);
+  const me = UI.label();
+  const S = k => sumOf(rows,k);
+  const tgt = S('appointments_target'), arr = S('arrivals_raw'), pace = S('arrivals_monthly_pace'), ratio = tgt ? pace/tgt : null, leads = S('leads');
+  const pRows = prevTeam(), pS = kk => pRows.length ? sumOf(pRows, kk) : null;
+  // פרסי התחרות — תצוגה בלבד, לא נכנסים לקצב, ליעד או לאחוזים
+  const comp = r => sumAwards(AWARDS.filter(a=>a.staff_label===r.rep), 'money');
+  const compArr = r => sumAwards(AWARDS.filter(a=>a.staff_label===r.rep), 'arrivals');
+  const arrExtra = sumAwards(AWARDS.filter(a=>rows.some(x=>x.rep===a.staff_label)), 'arrivals');
+  const tiles = document.getElementById('tvTiles');
+  tiles.innerHTML = [
+    `<div class="tile hero"><div class="k">הגעות של ייעוצים ${q('arrivals')}</div><div class="v" data-count="${arr}" data-fmt="int">${int(arr)}</div><div class="m">מתוך ${int(S('bookings_raw'))} קביעות · ${pct(tgt?arr/tgt:null,0)} מהיעד</div>${arrExtra?`<div class="m">${UI.plusComp(arr, arrExtra, int)} <span class="dash">עם תוספת התחרות</span></div>`:''}${UI.prevLine(arr, pS('arrivals_raw'), int)}</div>`,
+    `<div class="tile"><div class="k">נסגרו ${q('phone_closings')}</div><div class="v" data-count="${S('closings_raw')}" data-fmt="int">${int(S('closings_raw'))}</div><div class="m">אחוז סגירה ${pct(arr?S('closings_raw')/arr:null)}</div>${UI.prevLine(S('closings_raw'), pS('closings_raw'), int)}</div>`,
+    `<div class="tile ${UI.paceCls(ratio)}"><div class="k">קצב הגעות — צפי ${q('pace_phone')}</div><div class="v" data-count="${pace}" data-fmt="one">${one(pace)}</div><div class="m">${tgt?UI.statusPill(ratio, `${pct(ratio,0)} מיעד ${int(tgt)}`):'אין יעד'} ${q('pace_color')}</div></div>`,
+    (()=>{ const n = S('fifty_count'), r = FIFTY_TARGET ? n/FIFTY_TARGET : null;
+      // קצב האשראים: לפי מה שנגבה עד היום, כמה יהיו בסוף החודש
+      const we = Number(rows[0]?.workdays_elapsed)||0, wm = Number(rows[0]?.workdays_in_month)||0;
+      const fPace = we ? n/we*wm : n, pr = FIFTY_TARGET ? fPace/FIFTY_TARGET : null;
+      return `<div class="tile ${UI.paceCls(r)}"><div class="k">אשראי 50 ₪ שנגבו ${q('fifty_rep')}</div>` +
+        `<div class="v" data-count="${n}" data-fmt="int">${int(n)}</div>` +
+        `<div class="m">${money(n*50)} · <span id="fiftyTgt"></span>${r!=null?` ${UI.statusPill(r, `${pct(r,0)} מהיעד`)}`:''}</div>` +
+        `${UI.prevLine(n, pS('fifty_count'), int)}</div>` +
+        `<div class="tile ${UI.paceCls(pr)}"><div class="k">קצב אשראים — צפי לסוף החודש ${q('pace_phone')}</div>` +
+        `<div class="v" data-count="${fPace}" data-fmt="one">${one(fPace)}</div>` +
+        `<div class="m">${money(Math.round(fPace)*50)}${FIFTY_TARGET?` · ${UI.statusPill(pr, `${pct(pr,0)} מיעד ${int(FIFTY_TARGET)}`)}`:' · לא הוגדר יעד'}</div>` +
+        `<div class="prevline"><span class="lbl">נגבו עד כה</span><b>${int(n)}</b> · ${UI.one(we)} מתוך ${UI.one(wm)} ימי עבודה</div></div>`; })(),
+    `<div class="tile"><div class="k">עתידי ביומן ${q('future')}</div><div class="v small" data-count="${S('future_count')}" data-fmt="int">${int(S('future_count'))}</div><div class="m">נותרו ${one(rows[0]?.workdays_remaining)} ימי עבודה</div></div>`,
+    `<div class="tile"><div class="k">מיצוי לידים לעסקה ${q('leads_to_deal')}</div><div class="v small">${pct(leads?S('closings_raw')/leads:null)}</div><div class="m">${int(leads)} לידים · לפגישה ${pct(leads?arr/leads:null)}</div>${UI.prevLine(leads, pS('leads'), int, 'לידים חודש שעבר')}</div>`,
+  ].join('');
+  // היעד הצוותי — נערך בעיפרון ע"י סופר אדמין או מנהל/ת
+  const ft = document.getElementById('fiftyTgt');
+  if(ft) ft.appendChild(UI.inlineNumber({ value: FIFTY_TARGET, fmt: v=>v==null?'ללא יעד':`יעד ${int(v)}`, step: 10,
+    title:'יעד קביעות 50 ₪ לחודש', allow: UI.canEditTargets(),
+    onSave: async v => { await UI.rpc('set_target', {p_kind:'phone_fifty_target', p_month: MONTH, p_amount: v}); await load(); } }));
+  UI.countUp(tiles);
+  if(ratio!=null && ratio>=1) UI.celebrateOnce('phone-'+MONTH+'-'+TEAM);
+  ring('ringMeet', leads?arr/leads:null, 'מיצוי לידים לפגישה', `${int(arr)} הגעות מתוך ${int(leads)} לידים`, 'var(--c2)');
+  ring('ringDeal', leads?S('closings_raw')/leads:null, 'מיצוי לידים לעסקה', `${int(S('closings_raw'))} עסקאות מתוך ${int(leads)} לידים`, 'var(--c1)');
+  document.getElementById('podium').innerHTML = rows.length>=2 ? UI.podium(rows.slice(0,3).map(r=>{ const e = sumAwards(AWARDS.filter(a=>a.staff_label===r.rep), 'arrivals');
+      return {name:r.rep, value:Number(r.arrivals_raw), sub:`${e?`${int(r.arrivals_raw)} ＋ ${int(e)} = ${int(Number(r.arrivals_raw)+e)} · `:''}${int(r.closings_raw)} נסגרו · ${pct(r.target_attainment,0)} מהיעד`}; }), {fmt:int}) : '<div class="empty">אין מספיק נתונים</div>';
+
+  const maxArr = Math.max(...rows.map(r=>Number(r.arrivals_raw)||0), 1);
+  const maxBook = Math.max(...rows.map(r=>Number(r.bookings_raw)||0), 1);
+  const maxClose = Math.max(...rows.map(r=>Number(r.closings_raw)||0), 1);
+  const maxFifty = Math.max(...rows.map(r=>Number(r.fifty_count)||0), 1);
+  const tvhead = document.querySelector('#tv2 thead');
+  tvhead.innerHTML = `<tr>${TV_COLS.map(c=>{
+    const sortable = c[2] !== 'rank' && c[2] !== 'comp';
+    const cls = [c[2]==='pctb'?'hl':'', sortable?'sortable':''].filter(Boolean).join(' ');
+    return `<th${cls?` class="${cls}"`:''}${sortable?` data-key="${esc(c[0])}"${SORT.key===c[0]?` data-dir="${SORT.dir}"`:''} title="מיון לפי ${esc(c[1])}"`:''}>${c[1]} ${c[3]?q(c[3]):''}</th>`;
+  }).join('')}</tr>`;
+  UI.sortOn(tvhead, SORT, renderTV);
+  const cell = (r,c,i,isTot) => { const v = r[c[0]]; switch(c[2]){
+    case 'rank': return isTot?'<td></td>':`<td>${UI.rank(rankByArrivals.get(r.rep) || (i+1), {what:'הגעות', me:r.rep===me})}</td>`;
+    case 'name': return isTot?'<td>סה״כ</td>':`<td><a href="#" class="rep" data-rep="${esc(r.rep)}">${esc(r.rep)}</a>${r.rep===me?' <span class="chip lemon">אני</span>':''}${TEAM==='all'?` <span class="chip">${esc((TEAMS.find(t=>t.team_key===r.team)||{}).title||r.team)}</span>`:''}</td>`;
+    case 'bar': { const extra = isTot ? arrExtra : compArr(r);
+      return `<td class="num">${UI.databar(v, maxArr, 'accent', UI.plusComp(v, extra, int))}</td>`; }
+    case 'barb': return `<td class="num">${UI.databar(v, maxBook, 'c5', int(v))}</td>`;
+    case 'bar50': return `<td class="num">${UI.databar(v, maxFifty, 'c3', int(v))}</td>`;
+    case 'barc': return `<td class="num">${UI.databar(v, maxClose, 'c4', int(v))}` +
+      `${!isTot && medalOf.get(r.rep)<=3 ? ' ' + UI.rank(medalOf.get(r.rep), {kind:'medal', noNum:true, what:'סגירות', me:r.rep===me}) : ''}</td>`;
+    case 'pcth': return `<td class="num hl"><b>${pct(v)}</b>${UI.star(Number(v) >= 0.6, 'מעל 60% סגירה')}</td>`;
+    case 'tgt': return isTot?`<td class="num">${int(v)}</td>`:`<td class="num tgtcell"></td>`;
+    case 'meter': return `<td>${v==null?'<span class="dash">—</span>':UI.meter(Number(v))}</td>`;
+    case 'pace': { const rr = Number(r.appointments_target) ? Number(v)/Number(r.appointments_target) : null; return `<td class="num ${UI.paceCls(rr)}">${one(v)}</td>`; }
+    case 'pctb': return `<td class="num hl"><b>${pct(v)}</b></td>`;
+    case 'comp': { const c2 = isTot ? sumAwards(AWARDS.filter(a=>rows.some(x=>x.rep===a.staff_label)), 'money') : comp(r); return `<td class="num">${UI.bonusHtml(c2)}</td>`; }
+    case 'one': return `<td class="num">${v==null?'<span class="pos">✓ ביעד</span>':one(v)}</td>`;
+    case 'pct': return `<td class="num">${pct(v)}</td>`;
+    default: return `<td class="num">${int(v)}</td>`; } };
+  const totRow = { rep:'סה״כ', fifty_count:S('fifty_count'), bookings_raw:S('bookings_raw'), arrivals_raw:arr, closings_raw:S('closings_raw'), close_pct_raw: arr?S('closings_raw')/arr:null,
+    appointments_target:tgt, target_attainment: tgt?arr/tgt:null, arrivals_monthly_pace:pace, daily_arrivals_needed: null, future_count:S('future_count'), leads, leads_to_meeting_pct: leads?arr/leads:null, leads_to_deal_pct: leads?S('closings_raw')/leads:null };
+  document.querySelector('#tv2 tbody').innerHTML = rows.map((r,i)=>`<tr class="${r.rep===me?'me':''}" data-rep="${esc(r.rep)}">${TV_COLS.map(c=>cell(r,c,i,false)).join('')}</tr>`).join('') + `<tr class="total">${TV_COLS.map(c=>cell(totRow,c,0,true)).join('')}</tr>`;
+  rows.forEach(r=>{ const tr=document.querySelector(`#tv2 tr[data-rep="${CSS.escape(r.rep)}"]`); if(!tr) return; tr.querySelector('.tgtcell').appendChild(UI.inlineNumber({ allow: UI.canEditTargets(), value:r.appointments_target, fmt:v=>v==null?'—':int(v), step:5, title:'עריכת יעד ההגעות (סופר אדמין)', onSave: async v=>{ await UI.rpc('set_target',{p_kind:'phone_rep_target', p_key:String(r.config_id), p_amount:v}); await load(); } })); });
+  document.querySelectorAll('#tv2 a.rep').forEach(a=>a.onclick=e=>{ e.preventDefault(); openRep(a.dataset.rep); });
+  UI.chart.pairs('#tvChart', { items: rows.map(r=>({label:r.rep, a:Number(r.arrivals_monthly_pace||0), b:Number(r.appointments_target||0), sub:`הגעות עד כה ${int(r.arrivals_raw)}`})), names:['קצב הגעות (צפי)','יעד'], fmt: one, height: 240 });
+  document.getElementById('tvFoot').innerHTML = `ימי עבודה: ${one(rows[0]?.workdays_elapsed)} שעברו · ${one(rows[0]?.workdays_in_month)} בחודש (א׳–ה׳ בלי ערבי חג) ${q('pace_phone')} · מוצגות רק מתאמות עם פעילות החודש.`;
+}
+function ring(id, ratio, label, sub, color){
+  const p = ratio==null ? 0 : Math.min(100, ratio*100);
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="ring" style="--p:0;--ring-c:${color}"><b>${ratio==null?'—':pct(ratio,0)}</b></div><div class="lbl">${label} ${q(id==='ringMeet'?'leads_to_meeting':'leads_to_deal')}</div><div class="sb">${sub}</div>`;
+  requestAnimationFrame(()=>{ const r = el.querySelector('.ring'); let cur=0; const t0=performance.now(); const step=n=>{ const f=Math.min(1,(n-t0)/1000); cur=p*(1-Math.pow(1-f,3)); r.style.setProperty('--p', cur.toFixed(1)); if(f<1) requestAnimationFrame(step); }; if(UI.reduced()) r.style.setProperty('--p',p); else requestAnimationFrame(step); });
+}
+
+// פתיחת מתאמת: פירוט יומי → שמות עם V/X
+async function openRep(rep){
+  UI.modal({ title:`${esc(rep)} — הגעות וסגירות לפי יום · ${UI.heb(MONTH)}`, wide:true, body:'<div class="load">טוען…</div>' });
+  try{
+    const rows = await rest(`phone_my_clients?period_month=eq.${MONTH}&rep=eq.${encodeURIComponent(rep)}&order=appt_date.desc`);
+    const draw = qs => { const qq=(qs||'').toLowerCase(); const rs = rows.filter(r=>!qq || (r.client_name||'').toLowerCase().includes(qq));
+      return UI.dayGroups(rs, 'appt_date', (dr)=>`<div class="scroll"><table><thead><tr><th>לקוחה</th><th>שירות</th><th>סטטוס</th><th>הגעה</th><th>סגירת עסקה</th><th>סכום העסקה</th></tr></thead><tbody>${dr.map(r=>`<tr><td>${esc(r.client_name)}</td><td>${esc(r.service||'')}</td><td>${esc(r.appointment_status||'')}</td><td>${r.is_future?'<span class="dash">עתידי</span>':(Number(r.arrived)?'<span class="pos">V</span>':'<span class="neg">X</span>')}</td><td>${r.is_future?'<span class="dash">—</span>':(Number(r.closed)?'<span class="pos">V</span>':'<span class="neg">X</span>')}</td><td class="num">${r.deal_amount?money(r.deal_amount):'<span class="dash">—</span>'}</td></tr>`).join('')}</tbody></table></div>`,
+        { open:'first', summary:(d,dr)=>`${dr.length} קביעות · ${dr.filter(r=>Number(r.arrived)).length} הגעות · ${dr.filter(r=>Number(r.closed)).length} סגירות · ${money(dr.reduce((s,r)=>s+Number(r.deal_amount||0),0))}` }); };
+    UI.modalBody().innerHTML = `<div class="filterbar"><label class="search-field"><svg class="ico" viewBox="0 0 16 16" fill="none"><circle cx="6.75" cy="6.75" r="4.25" stroke="currentColor" stroke-width="1.6"/><path d="M10.2 10.2L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input type="search" id="rSearch" placeholder="חיפוש לקוחה…" /></label><span class="count">${rows.length} קביעות · ${rows.filter(r=>Number(r.arrived)).length} הגעות · ${rows.filter(r=>Number(r.closed)).length} סגירות</span></div><div id="rBody">${draw('')}</div>`;
+    UI.modalBody().querySelector('#rSearch').addEventListener('input', UI.debounce(e=>{ UI.modalBody().querySelector('#rBody').innerHTML = draw(e.target.value); },150));
+  }catch(e){ UI.modalBody().innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+// --------------------------------------------------------------------------- סיכום למנהל
+const SUM_ROWS = [['fifty_count','קביעת 50 שקל','int','fifty_rep'],['arrivals_raw','הגעות של ייעוצים','int','arrivals'],['closings_raw','כמה עסקאות נסגרו','int','phone_closings'],['leads','לידים','int','leads'],['close_pct','אחוז סגירה של יועצות','pct','close_pct_raw'],['leads_to_meeting_pct','מיצוי לידים לפגישה','pct','leads_to_meeting'],['leads_to_deal_pct','מיצוי לידים לעסקה','pct','leads_to_deal']];
+function renderSummary(){
+  const rows = active();
+  const S = k => sumOf(rows,k); const arr=S('arrivals_raw'), cls=S('closings_raw'), leads=S('leads');
+  const tot = { fifty_count:S('fifty_count'), arrivals_raw:arr, closings_raw:cls, leads, close_pct: S('arrivals')?S('closings')/S('arrivals'):null, leads_to_meeting_pct: leads?arr/leads:null, leads_to_deal_pct: leads?cls/leads:null };
+  const el = document.getElementById('sumGrid');
+  el.querySelector('thead').innerHTML = `<tr><th>ערכים</th>${rows.map(r=>`<th>${esc(r.rep)}</th>`).join('')}<th>סה״כ</th></tr>`;
+  el.querySelector('tbody').innerHTML = SUM_ROWS.map(([k,l,kind,qk])=>`<tr class="${k.startsWith('leads_to')?'rowband':''}"><td>${l} ${q(qk)}</td>${rows.map(r=>`<td class="num">${UI.fmt(r[k],kind)}</td>`).join('')}<td class="num">${UI.fmt(tot[k],kind)}</td></tr>`).join('');
+  document.getElementById('rings').innerHTML = rows.map(r=>`<div class="big-pct" style="padding:8px"><div class="ring" style="--p:${Math.min(100,(Number(r.leads_to_meeting_pct)||0)*100).toFixed(1)};--ring-c:var(--c2);width:110px;height:110px"><b style="font-size:20px">${pct(r.leads_to_meeting_pct,0)}</b></div><div class="lbl">${esc(r.rep)}</div><div class="sb">לעסקה ${pct(r.leads_to_deal_pct,0)} · ${int(r.leads)} לידים</div></div>`).join('') || '<div class="empty">אין נתונים</div>';
+  const share = document.getElementById('shareGrid'); const SH=[['bookings_raw','קביעות'],['arrivals_raw','הגעות של ייעוצים'],['closings_raw','עסקאות שנסגרו'],['fifty_count','קביעת 50 ₪']];
+  share.querySelector('thead').innerHTML = `<tr><th>ערכים</th>${rows.map(r=>`<th>${esc(r.rep)}</th>`).join('')}<th>סה״כ</th></tr>`;
+  share.querySelector('tbody').innerHTML = SH.map(([k,l])=>{ const d=S(k)||0; return `<tr><td>${l}</td>${rows.map(r=>`<td class="num">${d?pct(Number(r[k])/d):'—'}</td>`).join('')}<td class="num">${d?pct(1):'—'}</td></tr>`; }).join('');
+}
+
+// --------------------------------------------------------------------------- יומי
+async function renderDaily(){
+  const d = await rest(`phone_daily?period_month=eq.${MONTH}&select=appt_date,rep,bookings,arrivals,closings,team`);
+  const reps = active().map(r=>r.rep); const rows = d.filter(x=>reps.includes(x.rep));
+  const days = [...new Set(rows.map(r=>r.appt_date))].sort(); const by = new Map(rows.map(r=>[r.rep+'|'+r.appt_date, r]));
+  UI.chart.lines('#dailyChart', { labels: days.map(UI.dm), series: reps.map(rp=>({name:rp, values: days.map(dd=>{ const r=by.get(rp+'|'+dd); return r?Number(r.arrivals):0; })})), fmt: int, yfmt: int, title:'הגעות לפי יום' });
+  const el = document.getElementById('dailyGrid'); const daysR=[...days];
+  el.querySelector('thead').innerHTML = `<tr><th>תאריך</th><th>ערכים</th>${reps.map(r=>`<th>${esc(r)}</th>`).join('')}<th>סכום כולל</th></tr>`;
+  const M=[['bookings','קביעות ביומן'],['arrivals','הגעות'],['closings','סגירות עסקה']];
+  el.querySelector('tbody').innerHTML = daysR.map(day=>M.map(([k,l],i)=>{ let s=0; const tds=reps.map(rp=>{ const r=by.get(rp+'|'+day); const v=r?Number(r[k]):0; s+=v; return `<td class="num">${v||''}</td>`; }).join(''); return `<tr${i===0?' class="rowband"':''}>${i===0?`<td rowspan="3">${UI.dow(day)} ${UI.dm(day)}</td>`:''}<td>${l}</td>${tds}<td class="num">${s}</td></tr>`; }).join('')).join('') || '<tr><td class="dash">אין נתונים</td></tr>';
+}
+
+// --------------------------------------------------------------------------- עתידי ביומן
+function renderFuture(){
+  const reps = active().map(r=>r.rep); const fut = FUT.filter(f=>reps.includes(f.rep));
+  const days = [...new Set(fut.map(f=>f.future_date))].sort(); const byKey = new Map(fut.map(f=>[f.rep+'|'+f.future_date, f.future_count]));
+  const tot = fut.reduce((s,f)=>s+Number(f.future_count),0);
+  document.getElementById('futTiles').innerHTML = [['עתידי ביומן', int(tot), 'פגישות ייעוץ שטרם התקיימו', 'future'], ['ימים עם פגישות', int(days.length), '', null], ['להיום', int(fut.filter(f=>f.future_date===UI.today()).reduce((s,f)=>s+Number(f.future_count),0)), 'פגישות מתוכננות להיום', null]].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div><div class="m">${m}</div></div>`).join('');
+  UI.chart.bars('#futChart', { items: days.map(dd=>({label:UI.dm(dd), value: fut.filter(f=>f.future_date===dd).reduce((s,f)=>s+Number(f.future_count),0), cls:'c5'})), fmt: int, yfmt: int, height: 200 });
+  const fg = document.getElementById('futGrid');
+  fg.querySelector('thead').innerHTML = `<tr><th>תאריך</th>${reps.map(r=>`<th>${esc(r)}</th>`).join('')}<th>סכום כולל</th></tr>`;
+  fg.querySelector('tbody').innerHTML = days.map(dd=>{ let s=0; const tds=reps.map(rp=>{ const v=byKey.get(rp+'|'+dd)||0; s+=v; return `<td class="num">${v||''}</td>`; }).join(''); return `<tr><td>${UI.dow(dd)} ${UI.dm(dd)}</td>${tds}<td class="num">${s}</td></tr>`; }).join('') + (days.length?`<tr class="total"><td>סכום כולל</td>${reps.map(rp=>`<td class="num">${int(fut.filter(f=>f.rep===rp).reduce((s,f)=>s+Number(f.future_count),0))}</td>`).join('')}<td class="num">${int(tot)}</td></tr>`:'<tr><td class="dash">אין פגישות עתידיות</td></tr>');
+}
+
+// --------------------------------------------------------------------------- השוואה שנתית
+const ANN_METRICS = [['bookings_raw','קביעות','int'],['arrivals_raw','הגעות','int'],['closings_raw','נסגרו','int'],['close_pct_raw','% סגירה','pct'],['target_attainment','עמידה ביעד','pct'],['fifty_count','קביעת 50 ₪','int'],['leads_to_meeting_pct','מיצוי לידים לפגישה','pct'],['leads_to_deal_pct','מיצוי לידים לעסקה','pct']];
+function annFmt(v,kind){ return v==null?'—':kind==='pct'?pct(v):int(v); }
+async function renderAnnual(){
+  const body = document.querySelector('#annGrid tbody'); body.innerHTML='<tr><td class="load">טוען…</td></tr>';
+  const sel = document.getElementById('annMetric'), mx = document.getElementById('mxMetric');
+  if(!sel.options.length){ sel.innerHTML = ANN_METRICS.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join(''); mx.innerHTML = sel.innerHTML; mx.value='arrivals_raw'; sel.onchange=drawAnnualChart; document.getElementById('annKind').onchange=drawAnnualChart; mx.onchange=drawAnnualMatrix; }
+  if(!ANN_CACHE){ try{ ANN_CACHE = { reps: (await rest('phone_monthly?block=eq.2&order=period_month,row_order&limit=5000')).filter(r=>!r.is_total_row) }; }catch(e){ body.innerHTML=`<tr><td class="err">${esc(e.message)}</td></tr>`; return; } }
+  // מתאמת רואה את הגרפים של עצמה בלבד; מנהלת רואה את הצוות.
+  const meLbl = UI.isStaff() ? UI.label() : null;
+  const reps = ANN_CACHE.reps.filter(r=>(TEAM==='all'||r.team===TEAM) && (!meLbl || r.rep===meLbl));
+  const months = [...new Set(reps.map(r=>r.period_month))].sort();
+  const totals = months.map(m=>{ const rs=reps.filter(r=>r.period_month===m); const S=k=>sumOf(rs,k); const arr=S('arrivals_raw'), cls=S('closings_raw'), tg=S('appointments_target'), ld=S('leads');
+    return { period_month:m, bookings_raw:S('bookings_raw'), arrivals_raw:arr, closings_raw:cls, close_pct_raw: arr?cls/arr:null, target_attainment: tg?arr/tg:null, fifty_count:S('fifty_count'), leads_to_meeting_pct: ld?arr/ld:null, leads_to_deal_pct: ld?cls/ld:null, appointments_target:tg }; });
+  ANN_CACHE.totals = totals;
+  if(!totals.length){ body.innerHTML='<tr><td class="dash">אין נתונים</td></tr>'; return; }
+  const S = k => totals.reduce((a,t)=>a+Number(t[k]||0),0); const best=[...totals].sort((a,b)=>b.arrivals_raw-a.arrivals_raw)[0];
+  document.getElementById('annTiles').innerHTML = [['סה״כ קביעות',int(S('bookings_raw')),`${totals.length} חודשים`,'bookings'],['סה״כ הגעות',int(S('arrivals_raw')),'','arrivals'],['סה״כ נסגרו',int(S('closings_raw')),`% סגירה ${pct(S('arrivals_raw')?S('closings_raw')/S('arrivals_raw'):null)}`,'phone_closings'],['ממוצע הגעות לחודש',int(S('arrivals_raw')/totals.length),'',null],['עמידה ביעד (מצטבר)',pct(S('appointments_target')?S('arrivals_raw')/S('appointments_target'):null),`יעד מצטבר ${int(S('appointments_target'))}`,'target_attainment'],['החודש החזק',best?UI.shortMonth(best.period_month):'—',best?`${int(best.arrivals_raw)} הגעות`:'',null]].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div>${m?`<div class="m">${m}</div>`:''}</div>`).join('');
+  const cols=[...totals];
+  document.querySelector('#annGrid thead').innerHTML = `<tr><th>מדד</th>${cols.map(t=>`<th class="${t.period_month===MONTH?'selmonth':''}">${UI.heb(t.period_month)}</th>`).join('')}</tr>`;
+  body.innerHTML = ANN_METRICS.map(([k,l,kind])=>`<tr><td>${l}</td>${cols.map(t=>`<td class="num ${t.period_month===MONTH?'selmonth':''}">${annFmt(t[k],kind)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('annFoot').textContent = `${months.length} חודשים · ${UI.heb(months[0])} – ${UI.heb(months[months.length-1])} · ערכי raw להשוואה הוגנת בין חודשים` + (meLbl ? ' · הנתונים שלך בלבד' : '');
+  drawAnnualChart(); drawAnnualMatrix();
+}
+function drawAnnualChart(){
+  if(!ANN_CACHE||!ANN_CACHE.totals) return;
+  const key=document.getElementById('annMetric').value, meta=ANN_METRICS.find(m=>m[0]===key), kind=document.getElementById('annKind').value;
+  const pts = ANN_CACHE.totals.map(t=>({m:t.period_month, v:Number(t[key])})).filter(d=>isFinite(d.v));
+  const fmt = v=>annFmt(v,meta[2]), yfmt = meta[2]==='pct'?v=>pct(v,0):int;
+  if(kind==='lines') UI.chart.lines('#annChart',{labels:pts.map(p=>UI.shortMonth(p.m)), series:[{name:meta[1], values:pts.map(p=>p.v)}], fmt, yfmt, area:true, title:meta[1]});
+  else UI.chart.bars('#annChart',{items:pts.map(p=>({label:UI.shortMonth(p.m), value:p.v, sel:p.m===MONTH, cls:'c2'})), fmt, yfmt, title:meta[1]});
+}
+function drawAnnualMatrix(){
+  if(!ANN_CACHE) return;
+  const key=document.getElementById('mxMetric').value, meta=ANN_METRICS.find(m=>m[0]===key);
+  const meLbl2 = UI.isStaff() ? UI.label() : null;
+  const reps = ANN_CACHE.reps.filter(r=>(TEAM==='all'||r.team===TEAM) && (!meLbl2 || r.rep===meLbl2));
+  const cols=[...new Set(reps.map(r=>r.period_month))].sort();
+  const names=[...new Set(reps.map(r=>r.rep))]; const byKey=new Map(reps.map(r=>[r.rep+'|'+r.period_month, r]));
+  const vals=reps.map(r=>Number(r[key])).filter(v=>isFinite(v)); const max=Math.max(...vals,0), min=Math.min(...vals,0), span=(max-min)||1;
+  document.querySelector('#annMatrix thead').innerHTML = `<tr><th>מתאמת</th>${cols.map(m=>`<th class="${m===MONTH?'selmonth':''}">${UI.heb(m)}</th>`).join('')}<th>סה״כ</th></tr>`;
+  document.querySelector('#annMatrix tbody').innerHTML = names.map(n=>{ let sum=0,seen=0; const tds=cols.map(m=>{ const r=byKey.get(n+'|'+m); const v=r?Number(r[key]):null; if(v==null||!isFinite(v)) return '<td class="dash">—</td>'; sum+=v; seen++; const a=0.10+0.55*((v-min)/span); return `<td class="num ${m===MONTH?'selmonth':''}"><span class="cell" style="background:color-mix(in srgb, var(--accent) ${Math.round(a*100)}%, transparent)">${annFmt(v,meta[2])}</span></td>`; }).join('');
+    const agg = meta[2]==='pct'?(seen?sum/seen:null):sum; return `<tr class="${n===UI.label()?'me':''}"><td>${esc(n)}</td>${tds}<td class="num" style="font-weight:800">${annFmt(agg,meta[2])}${meta[2]==='pct'?' <span class="dash">(ממוצע)</span>':''}</td></tr>`; }).join('') || '<tr><td class="dash">אין נתונים</td></tr>';
+}
+
+// --------------------------------------------------------------------------- תחרויות
+// מצב התחרות לכל מתאמת: כמה יש לה, כמה חסר, ומי עמדה ביעד
+const COMP_METRIC = { arrivals:['arrivals_raw','הגעות',int], closings:['closings_raw','סגירות',int],
+  bookings:['bookings_raw','קביעות',int], fifty:['fifty_count','אשראי 50 ₪',int],
+  close_pct:['close_pct_raw','אחוז סגירה',v=>pct(v)] };
+function compGoals(c){
+  const g = [[c.goal1_value,c.goal1_label],[c.goal2_value,c.goal2_label],[c.goal3_value,c.goal3_label]].filter(x=>x[0]!=null);
+  if(!g.length) return '';
+  const m = COMP_METRIC[c.metric], fmt = m ? m[2] : int;
+  return `<div class="row" style="padding:6px 18px 2px;gap:8px;flex-wrap:wrap">` +
+    g.map(([v,l],i)=>`<span class="chip lemon">יעד ${i+1}: <b>${fmt(Number(v))}</b>${l?` · ${esc(l)}`:''}</span>`).join('') + `</div>`;
+}
+function compProgress(c){
+  const m = COMP_METRIC[c.metric];
+  const goalsAll = [c.goal1_value,c.goal2_value,c.goal3_value].filter(v=>v!=null).map(Number).sort((a,b)=>a-b);
+  const target = goalsAll.length ? goalsAll[goalsAll.length-1] : Number(c.target_value);
+  if(!m || !isFinite(target) || !target) return '';
+  const [key, label, fmt] = m, me = UI.label();
+  const reps = ROWS.filter(r=>r.block===2 && !r.is_total_row && (c.department==='phone' || r.team===c.department));
+  const list = reps.map(r=>({ rep:r.rep, v:Number(r[key])||0 })).sort((a,b)=>b.v-a.v);
+  if(!list.length) return '';
+  const done = list.filter(x=>x.v>=target).length;
+  return `<div class="info">היעד: <b>${fmt(target)} ${esc(label)}</b> · עמדו ביעד ${int(done)} מתוך ${int(list.length)}</div>` +
+    `<div class="scroll"><table class="mini inner"><thead><tr><th>מתאמת</th><th>${esc(label)}</th><th>התקדמות</th><th>מצב</th></tr></thead><tbody>` +
+    list.map(x=>{ const ok = x.v >= target, gap = Math.max(0, target - x.v);
+      return `<tr class="${x.rep===me?'me':''} ${ok?'':''}"><td>${esc(x.rep)}${x.rep===me?' <span class="chip lemon">אני</span>':''}</td>` +
+        `<td class="num">${fmt(x.v)}</td>` +
+        `<td>${UI.meter(target?x.v/target:0)}</td>` +
+        `<td>${ok?'<span class="chip good">✓ עמדה ביעד</span>':`<span class="chip warn">חסר ${fmt(gap)}</span>`}</td></tr>`; }).join('') +
+    `</tbody></table></div>`;
+}
+async function renderComp(){
+  const [comps, awards] = await Promise.all([rest(`competitions?period_month=eq.${MONTH}&order=created_at.desc`), rest(`competition_awards?period_month=eq.${MONTH}&order=created_at`)]);
+  AWARDS = awards;
+  const mine = UI.isStaff() ? awards.filter(a=>a.staff_label===UI.label()) : awards;
+  const total = sumAwards(mine,'money'), totalArr = sumAwards(mine,'arrivals');
+  document.getElementById('compTiles').innerHTML = [
+    [UI.isStaff()?'הבונוס שלי מתחרויות':'סה"כ בונוסים בתחרויות', UI.bonusHtml(total, {zero:'₪ 0'}), `${comps.length} תחרויות החודש`, 'competition'],
+    ['תוספת הגעות מתחרויות', int(totalArr), totalArr?'נזקפות להגעות בטבלה':'אין תוספות החודש', 'arrivals'],
+    ['זכיות', int(mine.length), UI.isStaff()?'שורות פרס על שמי':'שורות פרס', null],
+  ].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div><div class="m">${m}</div></div>`).join('');
+  const cd = document.getElementById('cDept'); if(cd && !cd.options.length){ cd.innerHTML = TEAMS.map(t=>`<option value="${esc(t.team_key)}">${esc(t.title)}</option>`).join('') + (UI.isMgr()?`<option value="phone">כל מתאמות הפגישות</option>`:''); }
+  const reps = ROWS.filter(r=>r.block===2&&!r.is_total_row).map(r=>r.rep);
+  document.getElementById('compList').innerHTML = comps.map(c=>{ const aw = awards.filter(a=>a.comp_id===c.comp_id);
+    return `<div class="card"><h2>🏅 ${esc(c.title)} <span class="chip lavender">${esc((TEAMS.find(t=>t.team_key===c.department)||{}).title||c.department)}</span><span class="note">${UI.heb(c.period_month)} · ${esc((c.created_by||'').split('@')[0])}${UI.canWrite()?` · <button class="btn ghost xs" data-delcomp="${c.comp_id}">מחיקת התחרות</button>`:''}</span></h2>` +
+      (c.starts_on||c.ends_on?`<div class="sub" style="padding:0 18px 4px">📅 ${esc(UI.dm(c.starts_on))}–${esc(UI.dm(c.ends_on))}</div>`:'') +
+      (c.rule_text?`<div class="info rule">🎯 <b>מה צריך לעשות:</b> ${esc(c.rule_text)}</div>`:'') +
+      compGoals(c) +
+      (c.notes?`<div class="info">${esc(c.notes)}</div>`:'') +
+      compProgress(c) +
+      `<div class="scroll"><table><thead><tr><th>מתאמת</th><th>הפרס</th><th>הערה</th><th>נוסף ע"י</th>${UI.canWrite()?'<th></th>':''}</tr></thead><tbody>${aw.map(a=>`<tr class="${a.staff_label===UI.label()?'me':''}"><td>${esc(a.staff_label)}</td><td class="num">${awardHtml(a)}</td><td style="white-space:normal">${esc(a.notes||'')}</td><td class="dash">${esc((a.created_by||'').split('@')[0])} · ${UI.time(a.created_at)}</td>${UI.canWrite()?`<td><button class="btn ghost xs" data-delaw="${a.award_id}">הסרה</button></td>`:''}</tr>`).join('') || `<tr><td colspan="5" class="dash">${UI.isStaff()?'אין בונוס על שמך בתחרות הזו':'עדיין אין זכיות'}</td></tr>`}</tbody></table></div>` +
+      (UI.canWrite()?`<form class="add-form awform" data-comp="${c.comp_id}" style="padding:10px 18px"><select name="rep">${reps.map(r=>`<option>${esc(r)}</option>`).join('')}</select><select name="kind" title="סוג הפרס"><option value="money">₪ כסף</option><option value="arrivals">＋ הגעות</option></select><input type="number" name="amount" placeholder="כמה" step="any" required style="width:100px" /><input type="text" name="notes" placeholder="הערת הסבר (מקום, על מה…)" style="min-width:230px" /><button class="btn sm" type="submit">הוספת פרס</button></form>`:'') + `</div>`; }).join('') || '<div class="card"><div class="empty"><span class="big">🏆</span>אין תחרויות החודש</div></div>';
+  document.querySelectorAll('.awform').forEach(f=>f.onsubmit=async e=>{ e.preventDefault(); const fd=new FormData(f); try{ await UI.rpc('add_competition_award',{p_comp_id:Number(f.dataset.comp), p_label:fd.get('rep'), p_amount:Number(fd.get('amount')), p_notes:fd.get('notes')||null, p_kind:fd.get('kind')||'money'}); UI.toast('הפרס נוסף ✓','good'); await renderComp(); renderTV(); }catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); } });
+  document.querySelectorAll('[data-delaw]').forEach(b=>b.onclick=async()=>{ if(!confirm('להסיר את שורת הבונוס?')) return; try{ await UI.rpc('delete_competition_award',{p_award_id:Number(b.dataset.delaw)}); await renderComp(); renderTV(); }catch(err){ UI.toast(err.message,'bad'); } });
+  document.querySelectorAll('[data-delcomp]').forEach(b=>b.onclick=async()=>{ if(!confirm('למחוק את התחרות וכל הבונוסים שלה?')) return; try{ await UI.rpc('delete_competition',{p_comp_id:Number(b.dataset.delcomp)}); await renderComp(); renderTV(); }catch(err){ UI.toast(err.message,'bad'); } });
+}
+document.getElementById('compForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+  const num = id => { const v = document.getElementById(id).value; return v===''?null:Number(v); };
+  const txt = id => document.getElementById(id).value.trim() || null;
+  const mt = document.getElementById('cMetric').value;
+  if(mt && num('cGoal1')==null){ UI.toast('בחרת מדד — צריך לפחות יעד אחד','bad'); return; }
+  try{ await UI.rpc('add_competition',{p_department:document.getElementById('cDept').value, p_month:MONTH,
+    p_title:document.getElementById('cTitle').value, p_notes:document.getElementById('cNotes').value||null,
+    p_rule:document.getElementById('cRule').value||null, p_metric:mt||null,
+    p_starts:document.getElementById('cFrom').value||null, p_ends:document.getElementById('cTo').value||null,
+    p_goal1:num('cGoal1'), p_goal1_label:txt('cGoal1L'), p_goal2:num('cGoal2'), p_goal2_label:txt('cGoal2L'),
+    p_goal3:num('cGoal3'), p_goal3_label:txt('cGoal3L')});
+    ['cTitle','cRule','cGoal1','cGoal1L','cGoal2','cGoal2L','cGoal3','cGoal3L','cNotes'].forEach(id=>document.getElementById(id).value='');
+    UI.toast('התחרות נוספה ✓','good'); await renderComp(); }
+  catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); } });
+
+// --------------------------------------------------------------------------- הגדרות
+async function renderSetup(){
+  if(!UI.canWrite()) return;
+  const rows = ROWS.filter(r=>r.block===2 && !r.is_total_row);
+  const F=[['appointments_target','יעד הגעות','phone_rep_target'],['leads','לידים','phone_rep_leads'],['add_appointments','הוספה ידנית פגישות','phone_rep_add_appointments'],['add_arrivals','הוספה ידנית הגעות','phone_rep_add_arrivals'],['add_closings','הוספה ידנית סגירות','phone_rep_add_closings']];
+  const el = document.getElementById('editGrid');
+  el.querySelector('thead').innerHTML = `<tr><th>מתאמת</th><th>צוות</th>${F.map(f=>`<th>${f[1]}</th>`).join('')}<th>קביעות החודש</th></tr>`;
+  el.querySelector('tbody').innerHTML = rows.map(r=>`<tr><td>${esc(r.rep)}</td><td><select data-rep="${esc(r.rep)}" class="teamsel">${TEAMS.map(t=>`<option value="${esc(t.team_key)}"${t.team_key===r.team?' selected':''}>${esc(t.title)}</option>`).join('')}</select></td>${F.map(([k,,kind])=>`<td><input type="number" step="any" class="edit" value="${r[k]??''}" data-id="${r.config_id}" data-kind="${kind}" /></td>`).join('')}<td class="num">${int(r.bookings_raw)}</td></tr>`).join('');
+  el.querySelectorAll('input.edit').forEach(i=>i.onchange=async()=>{ try{ await UI.rpc('set_target',{p_kind:i.dataset.kind, p_key:i.dataset.id, p_amount:i.value===''?null:Number(i.value)}); i.classList.add('saved'); UI.toast('נשמר ✓','good'); ANN_CACHE=null; await load(); }catch(e){ UI.toast('שמירה נכשלה: '+e.message,'bad'); } });
+  el.querySelectorAll('.teamsel').forEach(s=>s.onchange=async()=>{ try{ await UI.rpc('set_target',{p_kind:'phone_rep_team', p_key:s.dataset.rep, p_note:s.value}); UI.toast('הצוות עודכן ✓','good'); ANN_CACHE=null; await load(); }catch(e){ UI.toast('שמירה נכשלה: '+e.message,'bad'); } });
+  document.getElementById('syncReps').onclick = async()=>{ try{ const n = await UI.rpc('phone_sync_reps',{p_month:MONTH}); UI.toast(n?`נוספו ${n} מתאמות`:'אין מתאמות חדשות','good'); await load(); }catch(e){ UI.toast(e.message,'bad'); } };
+  document.getElementById('leadsUrl').value = (UI.access().settings||{}).phone_leads_sheet_url || '';
+  document.getElementById('saveLeadsUrl').onclick = async()=>{ try{ await UI.rpc('set_target',{p_kind:'setting', p_key:'phone_leads_sheet_url', p_note:document.getElementById('leadsUrl').value||null}); UI.toast('נשמר ✓ (החיבור עצמו יבוצע בשלב הבא)','good'); await window.APP_AUTH.loadAccess(true); }catch(e){ UI.toast(e.message,'bad'); } };
+}
+
+// --------------------------------------------------------------------------- הלקוחות שלי
+const MY_COLS = [['appt_date','תאריך'],['rep','מתאמת'],['client_name','שם לקוחה'],['service','שירות'],['appointment_status','סטטוס פגישה'],['arrived','הגעה'],['closed','סגירה'],['deal_amount','סכום העסקה']];
+// פרס בתחרות: כסף (₪) או תוספת הגעות
+const isArr = a => a.award_kind === 'arrivals';
+const awardHtml = a => isArr(a)
+  ? `<span class="chip mint">＋${int(a.amount)} הגעות</span>`
+  : UI.bonusHtml(a.amount);
+const sumAwards = (list, kind) => list.filter(a => (kind==='arrivals') === isArr(a)).reduce((s,a)=>s+Number(a.amount||0),0);
+const flag = (v,fut) => fut ? '<span class="dash">עתידי</span>' : (Number(v) ? '<span class="pos">V</span>' : '<span class="neg">X</span>');
+function hl(s,qq){ const t=String(s??''); if(!qq) return esc(t); const i=t.toLowerCase().indexOf(qq); if(i<0) return esc(t); return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+qq.length))+'</mark>'+esc(t.slice(i+qq.length)); }
+function myKeep(r,m){ const a=Number(r.arrived||0), c=Number(r.closed||0); if(m==='future') return r.is_future; if(r.is_future) return m==='all'; if(m==='noarr') return !a; if(m==='noclose') return a&&!c; if(m==='gap') return !a||!c; return true; }
+async function renderMine(){
+  const fold=document.getElementById('myFold'); if(!fold||!fold.open) return;
+  const note=document.getElementById('myNote'), err=document.getElementById('myErr');
+  note.textContent='טוען…'; err.classList.add('hidden');
+  try{ MY_ROWS = await rest(`phone_my_clients?period_month=eq.${MONTH}&order=rep,appt_date&limit=5000`); }
+  catch(e){ MY_ROWS=[]; note.textContent=''; err.classList.remove('hidden'); err.textContent='טעינת הרשימה נכשלה: '+e.message; return; }
+  const reps=[...new Set(MY_ROWS.map(r=>r.rep))];
+  document.getElementById('myTitle').textContent = UI.isStaff() ? 'הלקוחות שלי — שמות ותאריכים' : 'הלקוחות של המתאמות — שמות ותאריכים';
+  note.textContent = `${int(MY_ROWS.length)} שורות · ${UI.heb(MONTH)}` + (reps.length>1?` · ${reps.length} מתאמות`:'');
+  drawMine();
+}
+function drawMine(){
+  const host=document.getElementById('myGroups'), qq=document.getElementById('mySearch').value.trim().toLowerCase(),
+        f=document.getElementById('myFilter').value, cnt=document.getElementById('myCount');
+  const rows = MY_ROWS.filter(r=>(TEAM==='all'||r.team===TEAM) && myKeep(r,f) && (!qq || [r.client_name,r.service,r.appointment_status,r.rep,UI.dm(r.appt_date),r.appt_date].join(' ').toLowerCase().includes(qq)));
+  cnt.textContent = rows.length===MY_ROWS.length ? `${int(MY_ROWS.length)} שורות` : `מציג ${int(rows.length)} מתוך ${int(MY_ROWS.length)}`;
+  if(!rows.length){ host.innerHTML='<div class="empty">אין תוצאות</div>'; return; }
+  const reps=[...new Set(rows.map(r=>r.rep))];
+  const head = `<tr>${MY_COLS.filter(c=>c[0]!=='rep').map(c=>`<th>${c[1]}</th>`).join('')}</tr>`;
+  // כל מתאמת היא קבוצה שנפתחת בלחיצה; בחיפוש או כשיש מתאמת אחת — נפתח מעצמו
+  host.innerHTML = reps.map((rp,i)=>{
+    const rs=rows.filter(r=>r.rep===rp), all=MY_ROWS.filter(r=>r.rep===rp);
+    const a=rs.filter(r=>Number(r.arrived)).length, c=rs.filter(r=>Number(r.closed)).length;
+    const sum=rs.reduce((x,r)=>x+Number(r.deal_amount||0),0);
+    const open = qq || reps.length===1 || (UI.isStaff() && rp===UI.label());
+    return `<details class="daygroup" ${open?'open':''}><summary><span>${esc(rp)}${rp===UI.label()?' <span class="chip lemon">אני</span>':''}</span>` +
+      `<span class="cnt">${int(rs.length)}${rs.length===all.length?'':` מתוך ${int(all.length)}`} פגישות · ${int(a)} הגעות · ${int(c)} סגירות${sum?` · ${money(sum)}`:''}</span></summary>` +
+      `<div class="rows"><div class="scroll"><table class="mini inner"><thead>${head}</thead><tbody>` +
+      rs.map(r=>`<tr><td>${hl(UI.dm(r.appt_date),qq)}</td><td>${hl(r.client_name,qq)}</td><td>${hl(r.service,qq)}</td><td>${hl(r.appointment_status,qq)}</td><td>${flag(r.arrived,r.is_future)}</td><td>${flag(r.closed,r.is_future)}</td><td class="num">${r.deal_amount?money(r.deal_amount):'<span class="dash">—</span>'}</td></tr>`).join('') +
+      `</tbody></table></div></div></details>`;
+  }).join('');
+}
+document.getElementById('myFold').addEventListener('toggle', renderMine);
+document.getElementById('mySearch').addEventListener('input', drawMine);
+document.getElementById('myFilter').addEventListener('change', drawMine);
+
+document.addEventListener('access-ready', () => UI.applyVisibility());
+init().catch(err=>{ document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<div class="card"><div class="err">טעינה נכשלה: ${esc(err.message)}</div></div>`); });
+</script>
+</body>
+</html>

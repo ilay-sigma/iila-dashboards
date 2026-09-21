@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>תצוגת עיצוב</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<svg id="dash-icons" aria-hidden="true" style="display:none">
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 16v-5M12 16V8M17 16v-3"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11h18V9M9 20v-6h6v6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h20v14H2zM2 10h20"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M3 21v-5h5"/></symbol>
+<symbol id="i-usercog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+<aside class="sidebar" id="sidebar"><div class="side-brand"><a class="brand" href="#" aria-label="אילה ברלין"></a><span class="side-name">מעקב המכירות</span><button class="side-close" type="button" aria-label="סגירה"><svg class="ico " aria-hidden="true"><use href="#i-x"/></svg></button></div><nav class="side-nav"><a class="side-link active" href="#" style="--i:0"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-chart"/></svg></span><span>KPI — הכנסות</span></a><a class="side-link" href="#" style="--i:1"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-store"/></svg></span><span>מכירות המחלקות</span></a><a class="side-link" href="#" style="--i:2"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-users"/></svg></span><span>ייעוצים פרונטליים</span></a><a class="side-link" href="#" style="--i:3"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-phone"/></svg></span><span>ביצועים טלפניות</span></a><a class="side-link" href="#" style="--i:4"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-pen"/></svg></span><span>חוסרי חתימה</span></a><a class="side-link" href="#" style="--i:5"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-check"/></svg></span><span>השלמות מחודש קודם</span></a><a class="side-link" href="#" style="--i:6"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-card"/></svg></span><span>אמצעי תשלום ו-ERN</span></a><a class="side-link" href="#" style="--i:7"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-refresh"/></svg></span><span>לוג עדכונים</span></a><a class="side-link" href="#" style="--i:8"><span class="side-ico"><svg class="ico " aria-hidden="true"><use href="#i-usercog"/></svg></span><span>ניהול משתמשים</span></a></nav><div class="side-foot"><div class="side-user"><span class="avatar">עי</span><span class="who">עילי בועז יונייב<em>סופר אדמין</em></span><span class="lvl">סופר אדמין</span></div><div class="side-actions"><button class="theme-toggle" type="button" role="switch" aria-checked="false" title="מעבר לתצוגה כהה"><svg class="ico sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="ico moon" aria-hidden="true"><use href="#i-moon"/></svg><span class="knob"></span></button><button class="side-out" type="button"><svg class="ico " aria-hidden="true"><use href="#i-logout"/></svg><span>יציאה</span></button></div></div></aside><div class="side-bg"></div>
+<!-- דף בדיקה ויזואלי בלבד: אין בו נתונים ואינו דורש התחברות. משמש לוודא
+     שמערכת העיצוב (v3) נטענת כראוי אחרי פרסום — כל רכיב מרכזי מופיע כאן פעם אחת. -->
+<header>
+  <button class="menubtn" type="button" aria-label="תפריט"><svg class="ico " aria-hidden="true"><use href="#i-menu"/></svg></button>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>תצוגת עיצוב</h1>
+  <select><option>ספטמבר 2026</option></select>
+  <span class="sub">דף בדיקה — אין כאן נתונים אמיתיים</span>
+  <a class="btn ghost sm" href="#">העלאת לידים</a>
+  <nav class="tabs">
+    <button aria-selected="true">חודשי</button>
+    <button aria-selected="false">תצוגה שנתית</button>
+    <button aria-selected="false">ימי עבודה</button>
+  </nav>
+  <span class="navbox"><label class="navview-wrap" title="צפייה כתפקיד"><svg class="ico " aria-hidden="true"><use href="#i-eye"/></svg><select class="navview"><option>עצמי — סופר אדמין</option></select></label><span class="navwho"><span class="avatar">עי</span><span class="navname">עילי בועז יונייב<em>סופר אדמין</em></span></span><button class="iconbtn navout" type="button" title="יציאה"><svg class="ico " aria-hidden="true"><use href="#i-logout"/></svg></button></span>
+</header>
+<div class="wrap">
+  <div class="dept-tabs">
+    <button aria-selected="true">מטפלות<small>3 חברות צוות</small></button>
+    <button aria-selected="false">מנהלות משרד<small>2 חברות צוות</small></button>
+    <button aria-selected="false">כל המחלקות<small>מבט־על</small></button>
+  </div>
+
+  <div class="tiles">
+    <div class="tile hero"><div class="k">יעד חודשי <button class="q" type="button">?</button></div><div class="v">₪ 2,500,000</div><div class="m">החודש רץ</div></div>
+    <div class="tile"><div class="k">מצטבר עד היום</div><div class="v">₪ 1,044,638</div><div class="m">41.8% מהיעד · 14 ימי עבודה</div><div class="prevline"><span class="lbl">חודש שעבר</span><b>₪ 2,052,061</b><span class="neg">49% ▼</span></div></div>
+    <div class="tile"><div class="k">קצב — צפי לסוף החודש</div><div class="v">₪ 1,566,957</div><div class="m"><span class="pill-status warn">63% מהיעד</span></div></div>
+    <div class="tile neg"><div class="k">פער בין הקצב ליעד</div><div class="v">-₪ 933,043</div><div class="m">נדרש יומי מעכשיו ₪ 207,909</div></div>
+    <div class="tile pos"><div class="k">ממוצע ליום עבודה</div><div class="v">₪ 74,617</div><div class="m">סטנדרט יומי ₪ 131,579</div></div>
+    <div class="tile warn"><div class="k">אי-התאמות</div><div class="v small">4</div><div class="m">לא מאושרות</div></div>
+  </div>
+
+  <div class="card pastel-pink">
+    <h2>הדרך ליעד <span class="note">63% מהיעד · צפי 41.8%</span></h2>
+    <div class="body">
+      <div class="progress"><span class="fill warn" style="width:42%"></span>
+        <span class="ms" style="right:25%" data-l="25%"></span><span class="ms" style="right:50%" data-l="50%"></span><span class="ms" style="right:75%" data-l="75%"></span>
+        <span class="flag" style="right:42%">42% · ₪ 1,044,638</span>
+      </div>
+      <div class="row" style="margin-top:22px">
+        <span class="chip lemon">🏅 יום שיא: 17/9 · ₪ 132,108</span>
+        <span class="chip good">✓ 1 ימים מעל הסטנדרט</span>
+        <span class="spacer"></span>
+        <span class="sub">נשארו 7 ימי עבודה</span>
+        <span class="chip need neg">צריך <b>₪ 207,909</b> ביום</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>קצב מול היעד — יום אחרי יום <span class="note">מצטבר בפועל לעומת מה שנדרש עד אותו יום</span></h2>
+    <div class="chartwrap">
+      <svg viewBox="0 0 900 260" role="img" aria-label="דוגמת גרף">
+        <line class="gridline" x1="60" x2="880" y1="40" y2="40"/><line class="gridline" x1="60" x2="880" y1="95" y2="95"/>
+        <line class="gridline" x1="60" x2="880" y1="150" y2="150"/><line class="gridline" x1="60" x2="880" y1="205" y2="205"/>
+        <text class="axis" x="50" y="44" text-anchor="end">2.5M</text><text class="axis" x="50" y="99" text-anchor="end">1.9M</text>
+        <text class="axis" x="50" y="154" text-anchor="end">1.3M</text><text class="axis" x="50" y="209" text-anchor="end">625K</text>
+        <path class="area" d="M60,205 L200,190 L340,170 L480,150 L620,130 L760,110 L880,95 L880,240 L60,240 Z" fill="var(--c1)"/>
+        <path class="line dashed" d="M60,205 L200,175 L340,145 L480,115 L620,85 L760,60 L880,40" stroke="var(--c3)"/>
+        <path class="line" d="M60,205 L200,190 L340,170 L480,150 L620,130 L760,110 L880,95" stroke="var(--c1)"/>
+        <circle class="dot" cx="880" cy="95" r="4" style="fill:var(--c1)"/>
+        <text class="val pt" x="880" y="84" text-anchor="middle">1,044,638</text>
+        <text class="axis" x="60" y="232" text-anchor="middle">1/9</text><text class="axis" x="340" y="232" text-anchor="middle">8/9</text>
+        <text class="axis" x="620" y="232" text-anchor="middle">15/9</text><text class="axis" x="880" y="232" text-anchor="middle">20/9</text>
+      </svg>
+      <div class="chart-callout warn"><b>63% מהנדרש עד היום</b><span>₪ 1,044,638 מתוך ₪ 1,666,667 · 18/9</span></div>
+    </div>
+    <div class="chart-legend"><span><span class="sw" style="background:var(--c1)"></span>מצטבר בפועל</span><span><span class="sw" style="background:var(--c3)"></span>נדרש עד אותו יום</span></div>
+  </div>
+
+  <div class="card">
+    <h2>מעקב יומי — הכנסות מול יעד <span class="note">ירוק = מעל הנדרש · אדום = פחות מחצי מהנדרש</span></h2>
+    <div class="scroll"><table id="grid">
+      <thead><tr><th>מדד</th><th><div>ראשון</div><div class="metric">14/9</div></th><th><div>שני</div><div class="metric">15/9</div></th><th><div>שלישי</div><div class="metric">16/9</div></th><th class="today"><div>רביעי</div><div class="metric">17/9</div></th></tr></thead>
+      <tbody>
+        <tr class="hero"><td>קופה יומית</td><td class="num bad">₪ 48,210</td><td class="num">₪ 91,004</td><td class="num ok">₪ 140,900</td><td class="num ok">₪ 132,108</td></tr>
+        <tr class="hero"><td>קופה מצטבר</td><td class="num bad">₪ 680,412</td><td class="num bad">₪ 771,416</td><td class="num bad">₪ 912,316</td><td class="num bad">₪ 1,044,638</td></tr>
+        <tr><td>זיכויים</td><td class="num dash">—</td><td class="num neg">-₪ 2,400</td><td class="num dash">—</td><td class="num dash">—</td></tr>
+        <tr class="hero"><td>קצב חודשי (צפי)</td><td class="num bad">₪ 1,480,000</td><td class="num bad">₪ 1,501,200</td><td class="num bad">₪ 1,545,800</td><td class="num bad">₪ 1,566,957</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card pastel-lemon">
+    <h2>המקומות הראשונים <span class="note">לפי ממוצע שולם להצעה</span></h2>
+    <div class="podium">
+      <div class="p p2 cup"><span class="cup">🏆</span><div class="nm">ספיר סולומון</div><div class="vl">₪ 6,120</div><div class="sb">113% מהיעד</div></div>
+      <div class="p p1 cup"><span class="cup">🏆</span><div class="nm">קרן גרפמאייר</div><div class="vl">₪ 7,340</div><div class="sb">136% מהיעד</div></div>
+      <div class="p p3 cup"><span class="cup">🏆</span><div class="nm">בר שרעבי</div><div class="vl">₪ 5,410</div><div class="sb">100% מהיעד</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>דוגמת טבלה <span class="note">צבעים, מדים ופסי נתונים</span></h2>
+    <div class="filterbar">
+      <span class="search-field"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="שם, אימייל, מחלקה…"></span>
+      <select><option>כל התפקידים</option></select>
+      <label class="toggle"><input type="checkbox" checked> רק פעילות</label>
+      <span class="count">4 שורות</span>
+    </div>
+    <div class="scroll"><table class="rank-first">
+      <thead><tr><th>#</th><th>שם</th><th>שולם עד כה</th><th class="hl">ממוצע להצעה</th><th>עמידה ביעד</th><th>פעולות</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rank cup r1"><span class="cup">🏆</span></span></td><td>קרן גרפמאייר</td><td class="num"><span class="databar accent" style="--w:96%"><span>₪ 214,000</span></span></td><td class="num hl"><b>₪ 7,340</b></td><td><div class="meter"><span class="track"><span class="fill pos" style="width:100%"></span></span><span class="pct">136%</span></div></td><td class="act"><button class="btn ghost xs">עריכה</button></td></tr>
+        <tr class="me"><td><span class="rank cup r2"><span class="cup">🏆</span></span></td><td>ספיר סולומון <span class="chip lemon">אני</span></td><td class="num"><span class="databar accent" style="--w:74%"><span>₪ 164,800</span></span></td><td class="num hl"><b>₪ 6,120</b></td><td><div class="meter"><span class="track"><span class="fill pos" style="width:100%"></span></span><span class="pct">113%</span></div></td><td class="act"><button class="btn ghost xs">עריכה</button></td></tr>
+        <tr><td><span class="rank cup r3"><span class="cup">🏆</span></span></td><td>בר שרעבי</td><td class="num"><span class="databar accent" style="--w:52%"><span>₪ 116,900</span></span></td><td class="num hl"><b>₪ 5,410</b></td><td><div class="meter"><span class="track"><span class="fill warn" style="width:100%"></span></span><span class="pct">100%</span></div></td><td class="act"><button class="btn ghost xs">עריכה</button></td></tr>
+        <tr class="muted"><td><span class="rank rn"><span class="n">4</span></span></td><td>ילנה קריסטיצ׳נקו <span class="chip">לא בסיכום</span></td><td class="num">₪ 41,200</td><td class="num hl"><b>₪ 3,100</b></td><td><div class="meter"><span class="track"><span class="fill neg" style="width:57%"></span></span><span class="pct">57%</span></div></td><td class="act"><button class="btn ghost xs">עריכה</button></td></tr>
+        <tr class="total"><td></td><td>מסכם</td><td class="num">₪ 536,900</td><td class="num hl"><b>₪ 5,842</b></td><td></td><td></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>עמידה ביעד</h2>
+      <div class="kv"><span class="lbl">ימים מעל הסטנדרט <button class="q" type="button">?</button></span><span class="val">1 מתוך 14</span></div>
+      <div class="kv"><span class="lbl">יום שיא</span><span class="val">₪ 132,108</span></div>
+      <div class="kv"><span class="lbl">ממוצע שבועי</span><span class="val">₪ 373,085</span></div>
+      <div class="info">חודש בלי יעד משלו <b>יורש את היעד האחרון</b> שהוגדר לחודש קודם.</div>
+    </div>
+    <div class="card">
+      <h2>ממוצע לפי יום בשבוע <span class="note">ימים עם קופה בלבד</span></h2>
+      <div class="chartwrap" style="padding-bottom:0">
+        <svg viewBox="0 0 600 200">
+          <line class="gridline" x1="40" x2="590" y1="30" y2="30"/><line class="gridline" x1="40" x2="590" y1="90" y2="90"/><line class="gridline" x1="40" x2="590" y1="150" y2="150"/>
+          <rect class="bar" x="70" y="80" width="22" height="70" rx="4"/><rect class="bar" x="170" y="60" width="22" height="90" rx="4"/>
+          <rect class="bar sel" x="270" y="35" width="22" height="115" rx="4"/><rect class="bar" x="370" y="95" width="22" height="55" rx="4"/>
+          <rect class="bar" x="470" y="120" width="22" height="30" rx="4"/>
+          <text class="val" x="281" y="27" text-anchor="middle">98,400</text>
+          <text class="axis" x="81" y="172" text-anchor="middle">א׳</text><text class="axis" x="181" y="172" text-anchor="middle">ב׳</text><text class="axis" x="281" y="172" text-anchor="middle">ג׳</text><text class="axis" x="381" y="172" text-anchor="middle">ד׳</text><text class="axis" x="481" y="172" text-anchor="middle">ה׳</text>
+        </svg>
+      </div>
+      <table class="mini"><tbody>
+        <tr><td>ראשון</td><td>₪ 61,200</td></tr><tr><td>שני</td><td>₪ 78,900</td></tr><tr class="rowband"><td>שלישי</td><td>₪ 98,400</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h2>ליגה <span class="note">ממוצע להצעה</span></h2>
+      <div class="leader"><span class="nm"><span class="rank r1"><span class="n">1</span></span> קרן</span><span class="bar"><i class="pos" style="--w:100%"></i></span><span class="vl">₪ 7,340</span></div>
+      <div class="leader me"><span class="nm"><span class="rank r2"><span class="n">2</span></span> ספיר</span><span class="bar"><i class="pos" style="--w:83%"></i></span><span class="vl">₪ 6,120</span></div>
+      <div class="leader"><span class="nm"><span class="rank r3"><span class="n">3</span></span> בר</span><span class="bar"><i class="warn" style="--w:74%"></i></span><span class="vl">₪ 5,410</span></div>
+      <div class="leader"><span class="nm"><span class="rank rn"><span class="n">4</span></span> ילנה</span><span class="bar"><i class="neg" style="--w:42%"></i></span><span class="vl">₪ 3,100</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>לוח החודש — קופה יומית ומצטבר <span class="note">ספטמבר 2026</span></h2>
+    <div class="calgrid">
+      <div class="hdr"><span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span></div>
+      <div class="days">
+        <div class="day pad"></div><div class="day pad"></div>
+        <div class="day kpi ok"><span class="d">1</span><span class="n1 ok">₪ 140,900</span><span class="n2">₪ 140,900</span></div>
+        <div class="day kpi bad"><span class="d">2</span><span class="n1 bad">₪ 48,210</span><span class="n2">₪ 189,110</span></div>
+        <div class="day kpi"><span class="d">3</span><span class="n1">₪ 91,004</span><span class="n2">₪ 280,114</span><span class="cr">זיכוי ₪ 2,400</span></div>
+        <div class="day kpi empty"><span class="d">4</span></div>
+        <div class="day kpi empty"><span class="d">5</span></div>
+        <div class="day kpi ok today"><span class="d">6</span><span class="n1 ok">₪ 132,108</span><span class="n2">₪ 412,222</span></div>
+        <div class="day full"><span class="d">7</span><span class="s">יום מלא</span></div>
+        <div class="day half"><span class="d">8</span><span class="s">חצי יום</span></div>
+        <div class="day closed"><span class="d">9</span><span class="s">סגור</span></div>
+        <div class="day off"><span class="d">10</span><span class="s">שבת</span></div>
+      </div>
+      <div class="legend"><span class="lg ok">מעל הנדרש</span><span class="lg bad">פחות מחצי</span><span class="lg cr">זיכוי</span></div>
+    </div>
+  </div>
+
+  <div class="cols two">
+    <div class="card pastel-mint"><h2>כפתורים</h2><div class="body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn">ראשי</button><button class="btn soft">משני</button><button class="btn ghost">שקוף</button>
+      <button class="btn good sm">אישור ✓</button><button class="btn bad sm">דחייה ✗</button><button class="btn warn sm">שים לב</button>
+      <button class="btn" disabled>מושבת</button>
+      <span class="vx"><button class="v on">V</button><button class="x">X</button></span>
+      <button class="iconbtn on">✓</button><button class="iconbtn off">✗</button><button class="iconbtn">✎</button>
+      <input class="editnum" value="2,500,000">
+    </div></div>
+    <div class="card pastel-lavender"><h2>תוויות ומצבים</h2><div class="body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span class="chip accent">סופר אדמין</span><span class="chip lavender">מנהל/ת</span><span class="chip mint">חבר/ת צוות</span>
+      <span class="chip good">✓ ויתור</span><span class="chip warn">⏳ ממתינה</span><span class="chip bad">✗ לא מאושרת</span><span class="chip sky">2 כתובות</span>
+      <span class="pill-status pos">112%</span><span class="pill-status warn">84%</span><span class="pill-status neg">57%</span>
+      <span class="dot pos"></span><span class="dot warn"></span><span class="dot neg"></span>
+      <span class="badge-new">חדש</span>
+    </div>
+    <div class="err">שגיאת טעינה: דוגמה להודעת שגיאה</div>
+    <div class="info mgr">הודעת מנהל/ת — <b>מודגש</b> ורגיל.</div>
+    <div class="info todo">משימה פתוחה — לטפל עד סוף השבוע.</div>
+    <div class="load">טוען…</div>
+    </div>
+  </div>
+
+  <div class="cols two">
+    <div class="card"><h2>יחס המרה</h2><div class="big-pct"><div class="ring" style="--p:64;--ring-c:var(--c2)"><b>64%</b></div><div class="lbl">לידים → פגישה</div><div class="sb">118 מתוך 184 לידים</div></div></div>
+    <div class="card"><h2>שרשור הערות</h2>
+      <div class="thread">
+        <div class="msg request"><div class="who">קרן · 18/9 10:12</div><div class="txt">הלקוחה חתמה בטלפון, מבקשת ויתור.</div></div>
+        <div class="msg reply"><div class="who">ענבר · 18/9 11:40</div><div class="txt">בסדר, מאשרת.</div></div>
+        <div class="msg decision resolved-approved">✓ ויתור אושר</div>
+      </div>
+      <div class="compose"><textarea placeholder="הערה חדשה…"></textarea><button class="btn sm">שליחה</button></div>
+    </div>
+  </div>
+  <div class="foot">14 ימי פעילות · יעד ₪ 2,500,000 · המספרים נמשכים ישירות מ-Supabase.</div>
+</div>
+<script>
+(function(){
+  var b=document.body;
+  document.querySelector('.menubtn').addEventListener('click',function(){b.classList.toggle('side-open')});
+  document.querySelector('.side-bg').addEventListener('click',function(){b.classList.remove('side-open')});
+  document.querySelector('.side-close').addEventListener('click',function(){b.classList.remove('side-open')});
+  document.querySelector('.theme-toggle').addEventListener('click',function(){
+    var d=document.documentElement.dataset.theme==='dark'?'light':'dark';
+    document.documentElement.dataset.theme=d; this.setAttribute('aria-checked',d==='dark');
+    try{localStorage.setItem('dash.theme',d)}catch(e){}
+    document.documentElement.classList.add('theme-anim'); setTimeout(function(){document.documentElement.classList.remove('theme-anim')},700);
+  });
+  if(document.documentElement.dataset.theme==='dark') document.querySelector('.theme-toggle').setAttribute('aria-checked','true');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>KPI — הכנסות · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>KPI — הכנסות</h1>
+  <select id="month" title="חודש"></select>
+  <span class="sub" id="asof"></span>
+  <a class="btn ghost sm" data-write href="/intake/" target="_blank" rel="noopener" title="נפתח באותו שרת, ודורש התחברות Google בתפקיד סופר אדמין.">העלאת לידים</a>
+  <nav class="tabs" id="tabs">
+    <button data-tab="month"  aria-selected="true">חודשי</button>
+    <button data-tab="annual" aria-selected="false">תצוגה שנתית</button>
+    <button data-tab="days"   aria-selected="false">ימי עבודה</button>
+  </nav>
+</header>
+<div class="wrap">
+  <!-- ================= חודשי ================= -->
+  <section id="tab-month">
+    <div class="tiles" id="tiles"></div>
+    <div class="card pastel-pink">
+      <h2>הדרך ליעד <span class="note" id="progNote"></span></h2>
+      <div class="body" id="progress"></div>
+    </div>
+    <div class="card">
+      <h2>קצב מול היעד — יום אחרי יום <span class="note">מצטבר בפועל לעומת מה שנדרש עד אותו יום</span></h2>
+      <div class="chartwrap" id="paceChart"></div>
+    </div>
+    <div class="card">
+      <h2>מעקב יומי — הכנסות מול יעד <span class="note">מתחילת החודש, מימין לשמאל · ירוק = מעל הנדרש · אדום = פחות מחצי מהנדרש</span></h2>
+      <div class="scroll"><table id="grid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>לוח החודש — קופה יומית ומצטבר <span class="note" id="monthCalNote"></span></h2>
+      <div id="monthCal" class="calgrid"></div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h2>עמידה ביעד</h2>
+        <div id="summary"></div>
+      </div>
+      <div class="card">
+        <h2>ממוצע לפי יום בשבוע <span class="note">ימים עם קופה בלבד</span></h2>
+        <div class="chartwrap" id="weekdayChart" style="padding-bottom:0"></div>
+        <table class="mini"><tbody id="weekday"></tbody></table>
+      </div>
+      <div class="card">
+        <h2>ימים אחרונים</h2>
+        <table class="mini"><tbody id="recent"></tbody></table>
+      </div>
+    </div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <!-- ================= תצוגה שנתית ================= -->
+  <section id="tab-annual" class="hidden">
+    <div class="tiles" id="annTiles"></div>
+    <div class="card">
+      <h2>השוואת חודשים <span class="note">שורה = מדד, עמודה = חודש · החודש הנבחר מסומן · חודש פתוח מסומן ב-•</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>מגמה חודשית
+        <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מדד <select id="annMetric"></select>
+          <select id="annKind"><option value="bars">עמודות</option><option value="lines">נקודות מחוברות</option></select></label>
+      </h2>
+      <div class="chartwrap" id="annChart"></div>
+    </div>
+    <div class="cols">
+      <div class="card"><h2>סה״כ לשנה <span class="note" id="annYearNote"></span></h2><table class="mini"><tbody id="annYear"></tbody></table></div>
+      <div class="card"><h2>שינוי מול החודש הקודם</h2><table class="mini"><tbody id="annMom"></tbody></table></div>
+      <div class="card"><h2>קביעת 50 ₪ לפי חודש</h2><table class="mini"><tbody id="annFifty"></tbody></table></div>
+    </div>
+    <div class="card" id="tgtCard" data-write>
+      <h2>יעדי הכנסה חודשיים <span class="note">שינוי נשמר מיד ומעדכן את כל הדוח</span></h2>
+      <div class="info">חודש בלי יעד משלו <b>יורש את היעד האחרון שהוגדר לחודש קודם</b> (ואם אין — ברירת המחדל). אפשר גם לשנות את היעד ישירות באריח "יעד חודשי" בטאב החודשי.</div>
+      <div class="err hidden" id="tgtErr"></div>
+      <div class="scroll"><table id="tgtGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="annFoot"></div>
+  </section>
+
+  <!-- ================= ימי עבודה ================= -->
+  <section id="tab-days" class="hidden">
+    <div class="card pastel-mint">
+      <h2>איך סופרים ימי עבודה <span class="note">מדיניות לכל מחלקה — מסמך ההערות</span></h2>
+      <div class="scroll"><table id="polGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>לוח החודש — הכנסות המרכז <span class="note" id="calNote"></span></h2>
+      <div class="info" id="calInfo"></div>
+      <div id="calGrid" class="calgrid"></div>
+    </div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script src="js/config.js?v=20260918y"></script>
+<script>
+const C = window.KPI_CONFIG;
+const rest = UI.rest, esc = UI.esc, money = UI.money, pct = UI.pct, q = UI.q;
+let MONTH = null, MONTHS = [], ANN = null, DAYS = [], SUMM = null;
+
+// חמש שורות בלבד. שתי הראשונות מודגשות ונצבעות מול הנדרש:
+// ירוק = עומד/עובר את הנדרש, אדום = פחות מחצי מהנדרש, אחרת ניטרלי.
+const METRICS = [
+  {key:'daily_net',      label:'קופה יומית',        hero:true, q:'daily_net',   tone:(r,s)=>tone(r.daily_net, s.daily_standard), extra:r=>preCredits(r)},
+  {key:'cumulative_net', label:'קופה מצטבר',        hero:true, q:'cumulative',  tone:(r)=>tone(r.cumulative_net, r.required_cumulative)},
+  {key:'credits',        label:'זיכויים',           q:'credits', dashZero:true, onlyIf:rows=>rows.some(r=>Number(r.credits||0)!==0)},
+  {key:'monthly_pace',   label:'קצב חודשי (צפי)',   hero:true, q:'pace_center', tone:(r)=>tone(r.monthly_pace, r.monthly_target)},
+  {key:'gap_vs_target',  label:'פער מול קצב היעד',  q:'gap'},
+];
+function tone(v, req){
+  if(v===null||v===undefined||req===null||req===undefined) return '';
+  const n=Number(v), r=Number(req); if(!(r>0)) return '';
+  return n>=r ? 'ok' : (n < r/2 ? 'bad' : '');
+}
+// זיכוי "משמעותי" = לפחות 5% מהקופה לפני זיכויים (ולפחות 1,000 ₪). אז מציגים בסוגריים כמה היה לפני.
+function bigCredit(r){
+  const cr=Math.abs(Number(r.credits||0)), g=Number(r.gross_before_credits||0);
+  return cr>=1000 && g>0 && cr/g>=0.05;
+}
+function preCredits(r){ return bigCredit(r) ? `<span class="pre">(לפני זיכויים ${money(r.gross_before_credits)})</span>` : ''; }
+
+const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='days') renderDays(); });
+
+function cell(v, dashZero, tn, extra){
+  if(v===null||v===undefined) return '<td class="num dash">—</td>';
+  const n = Number(v);
+  if(dashZero && n===0) return '<td class="num dash">—</td>';
+  return `<td class="num ${n<0?'neg':''} ${tn||''}">${money(n)}${extra||''}</td>`;
+}
+
+async function loadMonths(){
+  const rows = await rest(`${C.VIEW}?select=period_month&order=period_month.desc`);
+  MONTHS = [...new Set(rows.map(r=>r.period_month))];
+  const sel = document.getElementById('month');
+  UI.fillMonths(sel, MONTHS, MONTHS[0]);
+  sel.onchange = ()=>{ MONTH = sel.value; render(MONTH); if(tabs.current()==='annual') renderAnnual(); if(tabs.current()==='days') renderDays(); };
+  if(MONTHS.length){ MONTH = MONTHS[0]; render(MONTH); if(tabs.current()==='annual') renderAnnual(); if(tabs.current()==='days') renderDays(); }
+  else document.getElementById('tiles').innerHTML='<div class="err">אין נתונים ב-Supabase לחודש כלשהו.</div>';
+}
+
+async function render(month){
+  document.querySelector('#grid tbody').innerHTML='<tr><td class="load">טוען…</td></tr>';
+  let rows, summ;
+  try{ [rows, summ] = await Promise.all([rest(`${C.VIEW}?period_month=eq.${month}&order=calendar_date`), rest(`kpi_summary?period_month=eq.${month}`)]); }
+  catch(e){ document.querySelector('#grid tbody').innerHTML=`<tr><td class="err">שגיאת טעינה: ${esc(e.message)}</td></tr>`; return; }
+  DAYS = rows; SUMM = summ[0] || {};
+  // כרונולוגי: היום הראשון בחודש מימין, האחרון משמאל
+  const active = rows.filter(r=>r.daily_net!==null).sort((a,b)=>a.calendar_date.localeCompare(b.calendar_date));
+  if(!active.length){ document.querySelector('#grid tbody').innerHTML='<tr><td class="err">אין ימי פעילות בחודש זה.</td></tr>'; document.getElementById('tiles').innerHTML=''; document.getElementById('monthCal').innerHTML=''; return; }
+  const asof = active[active.length-1];
+  document.getElementById('asof').textContent = `עדכני ל-${UI.dm(asof.calendar_date)} (${UI.DOW_FULL[new Date(asof.calendar_date).getUTCDay()]}) · רוענן ${UI.time(asof.refreshed_at)}`;
+
+  const thead = `<tr><th>מדד</th>${active.map(r=>`<th class="${r.calendar_date===asof.calendar_date?'today':''}"><div>${r.dow_he}</div><div class="metric">${UI.dm(r.calendar_date)}</div></th>`).join('')}</tr>`;
+  document.querySelector('#grid thead').innerHTML = thead;
+  document.querySelector('#grid tbody').innerHTML = METRICS.filter(mt=>!mt.onlyIf || mt.onlyIf(active)).map(mt=>
+    `<tr class="${mt.hero?'hero':''}"><td>${mt.label} ${q(mt.q)}</td>${active.map(r=>cell(r[mt.key], mt.dashZero, mt.tone ? mt.tone(r, SUMM) : '', mt.extra ? mt.extra(r) : '')).join('')}</tr>`).join('');
+
+  // גוללים כך שהיום האחרון ייראה (הסדר נשאר כרונולוגי מימין)
+  document.querySelector('#grid th.today')?.scrollIntoView({ inline:'end', block:'nearest' });
+  renderMonthCal(month, active, SUMM.daily_standard);
+  await renderExtras(month, asof);
+  document.getElementById('foot').textContent =
+    `${active.length} ימי פעילות · יעד ${money(asof.monthly_target)} · המספרים נמשכים ישירות מ-Supabase (public.kpi_dashboard). הקצב וימי העבודה לפי מדיניות "הכנסות המרכז".`;
+}
+
+async function renderExtras(month, asof){
+  const [wd, recent, prevSumm] = await Promise.all([
+    rest(`kpi_weekday_avg?period_month=eq.${month}`),
+    rest(`kpi_recent_days?period_month=eq.${month}&order=calendar_date.desc`),
+    rest(`kpi_summary?period_month=eq.${UI.prevMonth(month)}`),
+  ]);
+  const s = SUMM || {};
+  const prev = prevSumm[0] || null;
+  const target = Number(s.monthly_target || asof.monthly_target || 0);
+  const pace = Number(s.monthly_pace || 0), cum = Number(s.cumulative || 0);
+  const ratio = target ? pace/target : null, cls = UI.paceCls(ratio);
+  const attain = target ? cum/target : 0;
+  const isOpen = month === UI.thisMonth();
+  const vsPrev = prev ? UI.delta(isOpen ? pace : cum, prev.cumulative) : null;
+
+  // אריחים (RTL: הראשון מימין)
+  const tiles = document.getElementById('tiles');
+  tiles.innerHTML = [
+    `<div class="tile"><div class="k">יעד חודשי ${q('target_inherit')}</div><div class="v small" id="tgtTile"></div><div class="m">${isOpen ? 'החודש רץ' : 'חודש סגור'}</div></div>`,
+    `<div class="tile hero"><div class="k">מצטבר עד היום ${q('cumulative')}</div><div class="v" data-count="${cum}" data-fmt="money">${money(cum)}</div><div class="m">${pct(attain,1)} מהיעד · ${UI.int(s.workdays_elapsed)} ימי עבודה</div>${UI.prevLine(cum, prev && prev.cumulative, money)}</div>`,
+    `<div class="tile ${cls}"><div class="k">קצב — צפי לסוף החודש ${q('pace_center')}</div><div class="v" data-count="${pace}" data-fmt="money">${money(pace)}</div><div class="m">${UI.statusPill(ratio, `${pct(ratio,0)} מהיעד`)} ${q('pace_color')}</div>${UI.prevLine(pace, prev && prev.monthly_pace, money)}</div>`,
+    `<div class="tile ${Number(s.pace_vs_target)>=0?'pos':'neg'}"><div class="k">פער בין הקצב ליעד ${q('gap')}</div><div class="v small" data-count="${s.pace_vs_target||0}" data-fmt="money">${money(s.pace_vs_target)}</div><div class="m">נדרש יומי מעכשיו ${money(s.required_daily_from_now)} ${q('required_daily')}</div>${UI.prevLine(s.pace_vs_target, prev && prev.pace_vs_target, money)}</div>`,
+    `<div class="tile"><div class="k">ממוצע ליום עבודה ${q('daily_avg')}</div><div class="v small" data-count="${s.daily_avg||0}" data-fmt="money">${money(s.daily_avg)}</div><div class="m">סטנדרט יומי ${money(s.daily_standard)} ${q('daily_standard')}</div>${UI.prevLine(s.daily_avg, prev && prev.daily_avg, money)}</div>`,
+    `<div class="tile"><div class="k">מול חודש שעבר ${q('vs_last_month')}</div><div class="v small">${prev ? UI.deltaHtml(vsPrev) : '—'}</div><div class="m">${prev ? `${UI.heb(UI.prevMonth(month))}: ${money(prev.cumulative)}` : 'אין חודש קודם'}</div></div>`,
+  ].join('');
+  document.getElementById('tgtTile').appendChild(UI.inlineNumber({
+    value: target, fmt: money, step: 50000, title: 'עריכת היעד לחודש (סופר אדמין / הנהלה)', allow: UI.canEditTargets(),
+    onSave: async v => { await UI.rpc('set_target', { p_kind:'revenue', p_month: month, p_amount: v }); await render(month); if(tabs.current()==='annual') renderAnnual(); }
+  }));
+  UI.countUp(tiles);
+
+  // הדרך ליעד — פס התקדמות עם אבני דרך + הישגים
+  const best = DAYS.filter(r=>r.daily_net!==null).sort((a,b)=>Number(b.daily_net)-Number(a.daily_net))[0];
+  const std = Number(s.daily_standard||0);
+  let streak = 0; for(const r of [...DAYS].filter(r=>r.daily_net!==null && r.is_workday).sort((a,b)=>b.calendar_date.localeCompare(a.calendar_date))){ if(Number(r.daily_net) >= std) streak++; else break; }
+  const aboveStd = DAYS.filter(r=>r.daily_net!==null && r.is_workday && Number(r.daily_net)>=std).length;
+  const badges = [];
+  if(attain>=1) badges.push('<span class="chip good">🎯 היעד הושג!</span>');
+  if(ratio>=1 && attain<1) badges.push('<span class="chip good">🚀 בקצב מעל היעד</span>');
+  if(streak>=3) badges.push(`<span class="chip lemon">🔥 ${streak} ימים ברצף מעל הסטנדרט</span>`);
+  if(best) badges.push(`<span class="chip pink">🏆 יום שיא: ${UI.dm(best.calendar_date)} · ${money(best.daily_net)}</span>`);
+  badges.push(`<span class="chip mint">✅ ${aboveStd} ימים מעל הסטנדרט</span>`);
+  document.getElementById('progress').innerHTML =
+    UI.progress(attain, { flagText: `${money(cum)} · ${pct(attain,0)}`, title:'מצטבר מתוך היעד' }) +
+    `<div class="row" style="margin-top:6px">${badges.join(' ')}<span class="spacer"></span><span class="sub">נשארו ${UI.one(s.workdays_remaining)} ימי עבודה</span><span class="chip need ${cls}" title="כמה צריך להכניס בכל יום עבודה שנשאר כדי לסגור את היעד">🎯 צריך <b>${money(s.required_daily_from_now)}</b> ביום</span></div>`;
+  document.getElementById('progNote').textContent = `${pct(attain,1)} מהיעד · צפי ${pct(ratio,0)}`;
+  if(attain >= 1) UI.celebrateOnce('kpi-'+month);
+
+  // קצב מול היעד — קווים
+  const days = DAYS.filter(r=>r.daily_net!==null).map(r=>({date:r.calendar_date, actual:Number(r.cumulative_net), required:Number(r.required_cumulative)}));
+  // כמה אחוז אנחנו ממה שנדרש עד היום — כתוב בגוף הגרף, לא רק בטבלה למטה
+  const last = days.length ? days[days.length-1] : null;
+  const ofReq = last && last.required > 0 ? last.actual / last.required : null;
+  const callout = ofReq === null ? null : {
+    text: `${pct(ofReq,0)} מהנדרש עד היום`,
+    sub: `${money(last.actual)} מתוך ${money(last.required)} · ${UI.dm(last.date)}`,
+    tone: ofReq >= 1 ? 'pos' : (ofReq >= 0.8 ? 'warn' : 'neg'),
+    title: 'המצטבר בפועל חלקי מה שהיה צריך להצטבר עד היום כדי לעמוד ביעד החודשי',
+  };
+  UI.chart.lines('#paceChart', {
+    labels: days.map(d=>UI.dm(d.date)),
+    series: [
+      { name:'מצטבר בפועל', values: days.map(d=>d.actual), color:'var(--c1)' },
+      { name:'נדרש ליעד עד היום', values: days.map(d=>d.required), color:'var(--c3)', dashed:true, noDots:true },
+      { name:'יעד חודשי', values: days.map(()=>target), color:'var(--c4)', dashed:true, noDots:true },
+    ], fmt: money, area:true, title:'קצב מול היעד', callout });
+
+  // עמידה ביעד (kv)
+  const kv=[
+    ['יעד חודשי', money(target), '', 'target_inherit'],
+    ['מצטבר עד היום', money(cum), '', 'cumulative'],
+    ['אחוז עמידה בקצב', pct(s.attainment_pct), s.attainment_pct>=1?'pos':(s.attainment_pct<0.7?'neg':'warn'), 'attainment'],
+    ['נדרש יומי מעכשיו', money(s.required_daily_from_now), '', 'required_daily'],
+    ['קצב מול היעד', money(s.pace_vs_target), s.pace_vs_target<0?'neg':'pos', 'pace_center'],
+    ['ימי עבודה החודש', UI.one(s.workdays_month), '', 'workdays'],
+    ['ימי עבודה שעברו', UI.one(s.workdays_elapsed), '', 'workdays'],
+    ['ימי עבודה שנשארו', UI.one(s.workdays_remaining), '', 'workdays'],
+  ];
+  document.getElementById('summary').innerHTML = kv.map(([k,v,c,qk])=>`<div class="kv"><span class="lbl">${k} ${q(qk)}</span><span class="val ${c||''}">${v}</span></div>`).join('');
+
+  // ממוצע לפי יום בשבוע — עמודות + מיני
+  const wmap={}; wd.forEach(r=>wmap[r.dow_he]=r.avg_net);
+  const order=['א','ב','ג','ד','ה','ו'], DOWN={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביעי','ה':'חמישי','ו':'שישי'};
+  UI.chart.bars('#weekdayChart', { items: order.map(d=>({label:DOWN[d], value:Number(wmap[d]||0), cls:'c5'})), fmt: money, height: 220, yfmt: v=>UI.k(v,{plain:true}), goal: Number(s.daily_standard)||null, goalLabel: s.daily_standard ? 'סטנדרט יומי · '+UI.k(Number(s.daily_standard),{plain:true}) : null });
+  // פס בתוך השורה — יחסית לערך הגבוה בטבלה. הפס מתחת לטקסט, לא מסתיר אותו.
+  const vbar = (v, max, cls) => { const n = Math.abs(Number(v)||0), w = max ? Math.min(100, n/max*100) : 0;
+    return ` class="vbar ${cls}" style="--vbar-w:${w.toFixed(1)}%"`; };
+  const wdMax = Math.max(...order.map(d=>Math.abs(Number(wmap[d])||0)), 1);
+  document.getElementById('weekday').innerHTML = order.map(d=>
+    `<tr${vbar(wmap[d], wdMax, Number(wmap[d])<0?'neg':'mid')}><td>${DOWN[d]} ${q('weekday_avg')}</td><td class="${wmap[d]<0?'neg':''}">${wmap[d]==null?'—':money(wmap[d])}</td></tr>`).join('');
+
+  const recMax = Math.max(...recent.map(r=>Math.abs(Number(r.daily_net)||0)), 1);
+  document.getElementById('recent').innerHTML = recent.map(r=>{
+    const v = Number(r.daily_net)||0, std = Number(s.daily_standard)||0;
+    const cls = v < 0 ? 'neg' : (std && v >= std ? 'pos' : 'mid');
+    return `<tr${vbar(v, recMax, cls)}><td>${relLabel(r.calendar_date)} · ${UI.dm(r.calendar_date)}</td><td class="${v<0?'neg':''}">${v===0?'<span class="dash">—</span>':money(v)}</td></tr>`; }).join('') || '<tr><td class="dash">אין נתונים</td><td>-</td></tr>';
+
+}
+
+// לוח החודש: קופה יומית (מודגש, צבוע מול הסטנדרט היומי), מצטבר (צבוע מול הנדרש עד אותו יום), וזיכוי אם היה
+function renderMonthCal(month, active, std){
+  const el = document.getElementById('monthCal'); if(!el) return;
+  const y=+month.slice(0,4), m=+month.slice(5,7);
+  const pad = new Date(Date.UTC(y,m-1,1)).getUTCDay(), n = new Date(Date.UTC(y,m,0)).getUTCDate();
+  const map={}; active.forEach(r=>map[r.calendar_date]=r);
+  const today = UI.today(), DOWN=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+  let cells='', ok=0, bad=0, credits=0;
+  for(let d=1; d<=n; d++){
+    const iso=`${month.slice(0,7)}-${String(d).padStart(2,'0')}`, r=map[iso], dow=(pad+d-1)%7, isT=iso===today;
+    if(!r){
+      cells += `<div class="day readonly ${dow===6?'off':'empty'} ${isT?'today':''}"><span class="d">${d}${isT?' ●':''}</span><span class="h">${dow===6?'שבת':(iso>today?'':'אין קופה')}</span></div>`;
+      continue;
+    }
+    const t1=tone(r.daily_net, std), t2=tone(r.cumulative_net, r.required_cumulative), cr=Number(r.credits||0);
+    if(t1==='ok') ok++; if(t1==='bad') bad++; if(cr!==0) credits+=Math.abs(cr);
+    cells += `<div class="day kpi readonly ${t1} ${isT?'today':''}" title="${esc(`${UI.DOW_FULL[dow]} ${UI.dm(iso)} · סטנדרט יומי ${money(std)} · נדרש מצטבר ${money(r.required_cumulative)}`)}">` +
+      `<span class="d">${d}${isT?' ●':''}</span>` +
+      `<span class="n1 ${t1}">${money(r.daily_net)}</span>` +
+      `<span class="n2 ${t2}">מצטבר ${money(r.cumulative_net)}</span>` +
+      (cr!==0 ? `<span class="cr">זיכוי ${money(Math.abs(cr))}${bigCredit(r) ? ` (לפני: ${money(r.gross_before_credits)})` : ''}</span>` : '') + `</div>`;
+  }
+  el.innerHTML = `<div class="hdr">${DOWN.map(x=>`<span>${x}</span>`).join('')}</div><div class="days">${'<div class="day pad"></div>'.repeat(pad)}${cells}</div>` +
+    `<div class="legend"><span class="lg ok">מעל הסטנדרט היומי</span><span class="lg bad">פחות מחצי מהסטנדרט</span><span class="lg">בין לבין</span><span class="lg cr">זיכוי באותו יום</span></div>`;
+  const note = document.getElementById('monthCalNote');
+  if(note) note.textContent = `${active.length} ימי קופה · ${ok} מעל הסטנדרט · ${bad} מתחת לחצי` + (credits ? ` · זיכויים ${money(credits)}` : '');
+}
+
+function relLabel(iso){
+  const d=new Date(iso+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0);
+  const n=Math.round((today-d)/86400000);
+  if(n<=0) return 'היום'; if(n===1) return 'אתמול'; if(n===2) return 'לפני יומיים'; return `לפני ${n} ימים`;
+}
+
+// ============================================================ תצוגה שנתית
+const ANN_ROWS = [
+  ['total_net','סה״כ נטו','money',true,'cumulative'], ['gross_before_credits','לפני זיכויים','money',false,'gross'], ['credits','זיכויים','money',false,'credits'],
+  ['monthly_target','יעד חודשי','money',false,'target_inherit'], ['target_pct','אחוז מהיעד','pctT',true,'target_pct'], ['gap_vs_target','פער מול היעד','money',false,'gap'],
+  ['daily_avg','ממוצע ליום עבודה','money',true,'daily_avg'], ['best_day_net','היום החזק בחודש','money',false,'best_day'],
+  ['active_days','ימי פעילות','int',false,null], ['workdays_elapsed','ימי עבודה שנספרו','int',false,'workdays'],
+  ['mom_delta','שינוי מול החודש הקודם','money',true,'mom'], ['mom_pct','שינוי % מול החודש הקודם','pctD',false,'mom'],
+];
+const ANN_CHART = [['total_net','סה״כ נטו','money'],['gross_before_credits','לפני זיכויים','money'],['credits','זיכויים','money'],['daily_avg','ממוצע ליום עבודה','money'],['target_pct','אחוז מהיעד','pct'],['gap_vs_target','פער מול היעד','money'],['best_day_net','היום החזק בחודש','money']];
+const IS_MOM = k => k==='mom_delta' || k==='mom_pct';
+const momSafe = (row,k) => (IS_MOM(k) && !row.is_closed) ? null : row[k];
+function annFmt(v, kind){
+  if(v===null||v===undefined||(typeof v==='number'&&!isFinite(v))) return {t:'—', c:'dash'};
+  const n=Number(v);
+  if(kind==='int') return {t:UI.int(n), c:''};
+  if(kind==='pctT') return {t:pct(n), c: n>=1?'pos':(n<0.7?'neg':'warn')};
+  if(kind==='pctD') return {t:UI.pctSigned(n), c: n<0?'neg':(n>0?'pos':'')};
+  if(kind==='pct') return {t:pct(n), c:''};
+  return {t:money(n), c:n<0?'neg':''};
+}
+async function renderAnnual(){
+  const body = document.querySelector('#annGrid tbody');
+  body.innerHTML = '<tr><td class="load">טוען…</td></tr>';
+  try{
+    const [months, fifty] = await Promise.all([rest('kpi_annual?order=period_month'), rest('kpi_fifty_by_rep?select=period_month,cnt')]);
+    const fmap={}; fifty.forEach(r=>{ fmap[r.period_month]=(fmap[r.period_month]||0)+Number(r.cnt||0); });
+    ANN = { months, fifty: fmap };
+  }catch(e){ body.innerHTML = `<tr><td class="err">שגיאת טעינה: ${esc(e.message)}</td></tr>`; return; }
+  const { months } = ANN;
+  if(!months.length){ body.innerHTML='<tr><td class="dash">אין נתונים</td></tr>'; return; }
+  const cols = [...months];   // מימין לשמאל: החודש הראשון מימין
+  document.querySelector('#annGrid thead').innerHTML = `<tr><th>מדד</th>${cols.map(c=>`<th class="${c.period_month===MONTH?'selmonth':''}" ${c.is_closed?'':`title="חודש פתוח — עד ${UI.dm(c.as_of)}"`}><div>${UI.heb(c.period_month)}${c.is_closed?'':' •'}</div><div class="metric">${c.active_days} ימי פעילות</div></th>`).join('')}</tr>`;
+  body.innerHTML = ANN_ROWS.map(([k,lbl,kind,band,qk])=>`<tr class="${band?'rowband':''}"><td>${lbl} ${qk?q(qk):''}</td>${cols.map(c=>{ const f=annFmt(momSafe(c,k),kind); return `<td class="num ${f.c} ${c.period_month===MONTH?'selmonth':''}">${f.t}</td>`; }).join('')}</tr>`).join('');
+
+  const S = k => months.reduce((a,m)=>a+Number(m[k]||0),0);
+  const best = [...months].sort((a,b)=>Number(b.total_net)-Number(a.total_net))[0];
+  const worst = [...months].filter(m=>m.is_closed).sort((a,b)=>Number(a.total_net)-Number(b.total_net))[0];
+  const net=S('total_net'), tgt=S('monthly_target');
+  const tiles = document.getElementById('annTiles');
+  tiles.innerHTML = [
+    ['סה״כ נטו', money(net), `${months.length} חודשים`, 'cumulative'], ['ממוצע חודשי', money(months.length?net/months.length:null), '', null],
+    ['אחוז מהיעד המצטבר', annFmt(tgt?net/tgt:null,'pctT').t, `יעד ${money(tgt)}`, 'target_pct', tgt&&net/tgt>=1?'pos':'neg'],
+    ['החודש החזק', best?UI.heb(best.period_month):'—', best?money(best.total_net):'', null], ['החודש החלש', worst?UI.heb(worst.period_month):'—', worst?money(worst.total_net):'רק חודשים סגורים', null],
+    ['סה״כ זיכויים', money(S('credits')), '', 'credits'],
+  ].map(([k,v,m,qk,c])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small ${c||''}">${v}</div>${m?`<div class="m">${esc(m)}</div>`:''}</div>`).join('');
+
+  const year = new Date(MONTH||months[months.length-1].period_month).getUTCFullYear();
+  const ms = months.filter(m=>new Date(m.period_month).getUTCFullYear()===year);
+  const Sy = k => ms.reduce((a,m)=>a+Number(m[k]||0),0);
+  const besty = [...ms].sort((a,b)=>Number(b.total_net)-Number(a.total_net))[0];
+  document.getElementById('annYearNote').textContent = `${year} · ${ms.length} חודשים` + (ms.some(m=>!m.is_closed)?' (כולל חודש פתוח)':'');
+  document.getElementById('annYear').innerHTML = [
+    ['סה״כ נטו', money(Sy('total_net'))], ['לפני זיכויים', money(Sy('gross_before_credits'))], ['זיכויים', money(Sy('credits'))],
+    ['יעד מצטבר', money(Sy('monthly_target'))], ['אחוז מהיעד', annFmt(Sy('monthly_target')?Sy('total_net')/Sy('monthly_target'):null,'pctT').t],
+    ['ממוצע חודשי', money(ms.length?Sy('total_net')/ms.length:null)], ['החודש החזק', besty?`${UI.heb(besty.period_month)} · ${money(besty.total_net)}`:'—'],
+  ].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  document.getElementById('annMom').innerHTML = [...months].reverse().map(m=>{
+    const d=annFmt(momSafe(m,'mom_delta'),'money'), p=annFmt(momSafe(m,'mom_pct'),'pctD');
+    return `<tr class="${m.period_month===MONTH?'rowband':''}"><td>${UI.heb(m.period_month)}${m.is_closed?'':' •'}</td><td class="${d.c}">${momSafe(m,'mom_delta')==null?'—':`${d.t} <span class="dash">(${p.t})</span>`}</td></tr>`; }).join('');
+  const ft = Object.values(ANN.fifty).reduce((a,b)=>a+b,0);
+  document.getElementById('annFifty').innerHTML = [...months].reverse().map(m=>`<tr class="${m.period_month===MONTH?'rowband':''}"><td>${UI.heb(m.period_month)}</td><td>${ANN.fifty[m.period_month]?UI.int(ANN.fifty[m.period_month]):'<span class="dash">—</span>'}</td></tr>`).join('') + `<tr class="rowband"><td>סה״כ</td><td>${UI.int(ft)}</td></tr>`;
+
+  const sel = document.getElementById('annMetric');
+  if(!sel.options.length){ sel.innerHTML = ANN_CHART.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join(''); sel.onchange = drawAnnualChart; document.getElementById('annKind').onchange = drawAnnualChart; }
+  drawAnnualChart();
+  renderTargets();
+  document.getElementById('annFoot').textContent = `${months.length} חודשים · ${UI.heb(months[0].period_month)} – ${UI.heb(months[months.length-1].period_month)} · חודש פתוח מסומן ב-• · מקור: public.kpi_annual.`;
+}
+function drawAnnualChart(){
+  if(!ANN) return;
+  const key = document.getElementById('annMetric').value, meta = ANN_CHART.find(m=>m[0]===key), kind = document.getElementById('annKind').value;
+  const fmt = meta[2]==='pct' ? v=>pct(v,0) : money;
+  const yfmt = meta[2]==='pct' ? v=>pct(v,0) : v=>UI.k(v,{plain:true});
+  const pts = ANN.months.map(m=>({m:m.period_month, v:Number(m[key]), open:!m.is_closed, goal: key==='total_net' ? (Number(m.monthly_target ?? m.target)||null) : null})).filter(d=>isFinite(d.v));
+  if(kind==='lines') UI.chart.lines('#annChart', { labels: pts.map(p=>UI.shortMonth(p.m)), series:[{name:meta[1], values:pts.map(p=>p.v)}], fmt, yfmt, title: meta[1], area:true });
+  else UI.chart.bars('#annChart', { items: pts.map(p=>({label:UI.shortMonth(p.m)+(p.open?' •':''), value:p.v, sel:p.m===MONTH, cls:'c3', goal:p.goal, sub:p.open?'חודש פתוח — חלקי':''})), fmt, yfmt, title: meta[1], goal: pts.some(p=>p.goal) ? (it=>it.goal) : undefined });
+}
+
+// יעדים (סופר אדמין)
+async function renderTargets(){
+  const card = document.getElementById('tgtCard'); if(!card) return;
+  const err = document.getElementById('tgtErr'), el = document.getElementById('tgtGrid');
+  let rows; try{ rows = await rest('edit_monthly_targets?order=period_month.desc'); }
+  catch(e){ err.classList.remove('hidden'); err.textContent = `טעינת היעדים נכשלה: ${esc(e.message)}`; return; }
+  err.classList.add('hidden');
+  const def = rows.length ? Number(rows[0].default_target) : null;
+  el.querySelector('thead').innerHTML = '<tr><th>חודש</th><th>יעד (₪)</th><th>מקור</th><th>איפוס</th></tr>';
+  const numInput = (val, m) => `<input class="edit tgtin" type="number" step="50000" min="0" value="${val ?? ''}" data-month="${m ?? ''}" aria-label="יעד" style="width:130px" />`;
+  el.querySelector('tbody').innerHTML =
+    `<tr class="rowband"><td>ברירת מחדל — כשאין שום יעד קודם</td><td>${numInput(def,'')}</td><td class="dash">—</td><td class="dash">—</td></tr>` +
+    rows.map(r=>`<tr><td>${UI.heb(r.period_month)}${r.has_data?'':' <span class="dash">(אין עדיין נתונים)</span>'}</td><td>${numInput(Number(r.target_amount), r.period_month)}</td>` +
+      `<td>${r.is_custom?'<span class="pos">יעד לחודש</span>':(r.inherited_from?`<span class="dash">יורש מ-${UI.heb(r.inherited_from)}</span>`:'<span class="dash">ברירת מחדל</span>')}</td>` +
+      `<td>${r.is_custom?`<button class="btn ghost xs tgtreset" type="button" data-month="${r.period_month}">אפס</button>`:'<span class="dash">—</span>'}</td></tr>`).join('') +
+    `<tr class="rowband"><td><input type="month" id="tgtNewMonth" aria-label="חודש חדש" /></td><td><input class="edit tgtin" type="number" step="50000" min="0" id="tgtNewAmount" style="width:130px" /></td><td colspan="2"><button class="btn sm tgtadd" type="button">הוסף יעד</button></td></tr>`;
+}
+async function saveTarget(month, amount, el){
+  const err = document.getElementById('tgtErr'); if(el) el.disabled = true;
+  try{ await UI.rpc('set_monthly_target', { p_month: month, p_amount: amount }); UI.toast('היעד נשמר ✓','good'); }
+  catch(e){ err.classList.remove('hidden'); err.textContent = `שמירה נכשלה: ${esc(e.message)}`; if(el) el.disabled=false; await renderTargets(); return; }
+  err.classList.add('hidden');
+  try{ if(MONTH) await render(MONTH); await renderAnnual(); }catch(e){ err.classList.remove('hidden'); err.textContent = `היעד נשמר, אך רענון המסך נכשל: ${esc(e.message)}`; }
+}
+document.getElementById('tgtGrid')?.addEventListener('change', e=>{
+  const el = e.target.closest('input.tgtin[data-month]'); if(!el) return;
+  const month = el.dataset.month || null, raw = el.value.trim(), amount = (raw===''||Number(raw)===0)?null:Number(raw);
+  if(month===null && amount===null){ const er=document.getElementById('tgtErr'); er.classList.remove('hidden'); er.textContent='יעד ברירת המחדל חייב להיות מספר גדול מאפס.'; renderTargets(); return; }
+  saveTarget(month, amount, el);
+});
+document.getElementById('tgtGrid')?.addEventListener('click', e=>{
+  const reset = e.target.closest('button.tgtreset'); if(reset){ saveTarget(reset.dataset.month, null, reset); return; }
+  const add = e.target.closest('button.tgtadd');
+  if(add){ const m=document.getElementById('tgtNewMonth').value, a=document.getElementById('tgtNewAmount').value.trim();
+    if(!m||a===''||Number(a)<=0){ const er=document.getElementById('tgtErr'); er.classList.remove('hidden'); er.textContent='לבחור חודש ולהזין יעד גדול מאפס.'; return; }
+    saveTarget(`${m}-01`, Number(a), add); }
+});
+
+// ============================================================ ימי עבודה
+const KIND_HE = { holiday:'חג', eve_closed:'ערב חג — סגור', eve:'ערב חג — חצי יום', chol_hamoed:'חול המועד', closure:'סגירה', memorial:'יום זיכרון' };
+async function renderDays(){
+  const [pol, cal] = await Promise.all([rest('workday_policies'), rest(`work_calendar_month?period_month=eq.${MONTH}&order=calendar_date`)]);
+  const DOWN = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+  const TITLE = { center:'הכנסות המרכז', phone:'מתאמות פגישות', front:'פרונטליות · מנהלות משרד · מטפלות', mtl:'מת״ליות' };
+  document.querySelector('#polGrid thead').innerHTML = `<tr><th>מחלקה</th>${DOWN.map(d=>`<th>${d} אחורה</th>`).join('')}${DOWN.map(d=>`<th>${d} קדימה</th>`).join('')}<th>ערב חג אחורה</th><th>ערב חג קדימה</th><th>הסבר</th></tr>`;
+  document.querySelector('#polGrid tbody').innerHTML = pol.map(p=>`<tr><td>${esc(TITLE[p.policy_key]||p.title)} ${q('pace_'+p.policy_key)}</td>${p.w_back.map(w=>`<td class="num">${w}</td>`).join('')}${p.w_fwd.map(w=>`<td class="num">${w}</td>`).join('')}<td class="num">${p.eve_back}</td><td class="num">${p.eve_fwd}</td><td style="white-space:normal;text-align:right;max-width:360px">${esc(p.notes||'')}</td></tr>`).join('');
+
+  const center = pol.find(p=>p.policy_key==='center') || pol[0];
+  const today = UI.today();
+  let elapsed=0, remaining=0;
+  const weight = (d, fwd) => {
+    const dow = d.dow; const arr = fwd ? center.w_fwd : center.w_back;
+    if(!d.is_workday || d.holiday_kind==='holiday' || d.holiday_kind==='eve_closed' || Number(d.closure_fraction)>=1) return 0;
+    if(d.holiday_kind==='eve') return Math.min(Number(arr[dow]), Number(fwd?center.eve_fwd:center.eve_back));
+    return Number(arr[dow]) * (1 - Number(d.closure_fraction||0));
+  };
+  cal.forEach(d=>{ if(d.calendar_date < today) elapsed += weight(d,false); else remaining += weight(d,true); });
+  document.getElementById('calNote').textContent = `${UI.one(elapsed)} ימי עבודה עברו · ${UI.one(remaining)} נשארו · סה"כ ${UI.one(elapsed+remaining)}`;
+  document.getElementById('calInfo').innerHTML = `לכל יום מוצג המשקל שלו: <b>אחורה</b> (לחישוב הממוצע עד היום) ו<b>קדימה</b> (ימים שנשארו). חגים לפי הלוח הישראלי; שבת וחג לא נספרים. ` +
+    (UI.canWrite() ? 'סופר אדמין: לחיצה על יום מחליפה בין <b>יום עבודה</b> → <b>חצי יום</b> → <b>סגור</b> (סגירה ידנית של המרכז).' : '');
+  const pad = cal.length ? cal[0].dow : 0;
+  document.getElementById('calGrid').innerHTML = `<div class="hdr">${DOWN.map(d=>`<span>${d}</span>`).join('')}</div><div class="days">${'<div class="day pad"></div>'.repeat(pad)}` +
+    cal.map(d=>{
+      const n = Number(d.calendar_date.slice(8,10)); const wb = weight(d,false), wf = weight(d,true);
+      const cls = !d.is_workday ? 'off' : (wb===0 && wf===0) ? 'closed' : (wb<1 || wf<1) ? 'half' : 'full';
+      const kind = d.holiday_kind ? KIND_HE[d.holiday_kind] : '';
+      const canEdit = UI.canWrite() && d.is_workday && !['holiday','eve_closed'].includes(d.holiday_kind);
+      return `<div class="day ${cls} ${canEdit?'':'readonly'} ${d.calendar_date===today?'today':''}" data-date="${d.calendar_date}" data-cf="${d.closure_fraction||0}" title="${esc(d.holiday_name||'')}">` +
+        `<span class="d">${n}${d.calendar_date===today?' ●':''}</span><span class="h">${esc(d.holiday_name||kind||'')}</span>` +
+        `<span class="s">${d.is_workday ? `${wb} / ${wf}` : 'שבת'}</span></div>`;
+    }).join('') + '</div>';
+}
+document.getElementById('calGrid').addEventListener('click', async e=>{
+  const cell = e.target.closest('.day[data-date]'); if(!cell || cell.classList.contains('readonly') || !UI.canWrite()) return;
+  const cur = Number(cell.dataset.cf||0), next = cur===0 ? 0.5 : cur===0.5 ? 1 : 0;
+  cell.classList.add('busy');
+  try{ await UI.rpc('set_target', { p_kind:'calendar_day', p_key: cell.dataset.date, p_amount: next, p_note: next>0 ? (next===1?'סגור':'חצי יום') : null }); UI.toast('הלוח עודכן ✓','good'); await renderDays(); await render(MONTH); }
+  catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); cell.classList.remove('busy'); }
+});
+
+document.addEventListener('access-ready', () => UI.applyVisibility());
+loadMonths().catch(e=>{ document.getElementById('tiles').innerHTML=`<div class="err">שגיאת חיבור ל-Supabase: ${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

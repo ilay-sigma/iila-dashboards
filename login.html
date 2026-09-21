@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>כניסה — מעקב המכירות · אילה ברלין</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body>
+<main class="authpage">
+  <div class="authcard">
+    <span class="brand" role="img" aria-label="אילה ברלין — Pro Cosmetics"></span>
+    <h1>מעקב המכירות</h1>
+    <p class="sub" id="lead">כניסה עם חשבון Google — של החברה או הפרטי שרשום במערכת</p>
+
+    <div id="actions" class="hidden">
+      <button class="btn google" id="googleBtn" type="button">
+        <svg viewBox="0 0 18 18" width="17" height="17" aria-hidden="true">
+          <path fill="#4285F4" d="M17.6 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.66-3.88 2.66-6.62z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.81.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.94v2.33A9 9 0 0 0 9 18z"/>
+          <path fill="#FBBC05" d="M3.95 10.7a5.4 5.4 0 0 1 0-3.4V4.97H.94a9 9 0 0 0 0 8.06l3.01-2.33z"/>
+          <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .94 4.97L3.95 7.3C4.66 5.17 6.65 3.58 9 3.58z"/>
+        </svg>
+        התחברות עם Google
+      </button>
+    </div>
+
+    <div class="authstate" id="state">בודק התחברות…</div>
+
+    <div id="postActions" class="hidden" style="margin-top:16px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
+      <button class="btn" id="goLanding" type="button">לדוח שלי</button>
+      <button class="btn ghost hidden" id="exitPreview" type="button">חזרה לתצוגה שלי</button>
+      <button class="btn ghost" id="signOut" type="button">התנתקות</button>
+    </div>
+
+    <div class="foot" id="foot">מי שאין לו הרשאה יראה הודעה — סופר אדמין מוסיף משתמשים במסך "ניהול משתמשים".</div>
+  </div>
+</main>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script>
+const A = window.APP_AUTH;
+const C = window.AUTH_CONFIG;
+const $ = id => document.getElementById(id);
+// כתובת עם חותמת זמן — מונעת נחיתה על עותק ישן מהמטמון של הדפדפן
+const fresh = u => u + (String(u).includes('?') ? '&' : '?') + 'b=' + Date.now();
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const QS      = new URLSearchParams(location.search);
+const NEXT    = QS.get('next');
+const DENIED  = QS.get('denied');
+
+function say(html, bad){ const el = $('state'); el.innerHTML = html; el.classList.toggle('bad', !!bad); }
+function showLogin(msg, bad){ $('actions').classList.remove('hidden'); $('postActions').classList.add('hidden'); say(msg || '', bad); }
+function pageTitle(access, page){ const p = (access && access.pages || []).find(x => x.page === page); return p ? p.title : page; }
+
+$('googleBtn').addEventListener('click', async () => {
+  try{ say('מעביר ל-Google…'); await A.signInWithGoogle(NEXT || null); }
+  catch(e){ showLogin(esc(e.message), true); }
+});
+$('signOut').addEventListener('click', () => A.signOut(false).then(() => location.replace('login.html')));
+
+(async function init(){
+  let justSignedInNext;
+  try{ justSignedInNext = await A.completeRedirect(); }
+  catch(e){ showLogin('ההתחברות נכשלה: ' + esc(e.message), true); return; }
+
+  if(!A.isSignedIn){
+    showLogin(location.protocol === 'file:'
+      ? 'הדף נפתח כקובץ מקומי. יש לפתוח דרך השרת (https://…/login.html).'
+      : '', location.protocol === 'file:');
+    return;
+  }
+
+  say('טוען הרשאות…');
+  await A.ensureFresh();
+  if(!A.isSignedIn){ showLogin('הסשן פג. יש להתחבר מחדש.'); return; }
+
+  let access;
+  try{ access = await A.loadAccess(true); }
+  catch(e){ showLogin('שגיאה בטעינת הרשאות: ' + esc(e.message), true); return; }
+
+  if(!access || !access.authorized){
+    $('actions').classList.add('hidden');
+    $('postActions').classList.remove('hidden');
+    $('goLanding').classList.add('hidden');
+    say(`החשבון <b>${esc((access && access.email) || A.email || '')}</b> אינו מורשה למעקב המכירות.<br>יש לפנות לסופר אדמין (אילה, הראל או עינבר) כדי שיוסיפו אותך.`, true);
+    return;
+  }
+
+  $('lead').textContent = access.impersonating
+    ? `${access.display_name} · בתצוגה כ${access.role_title}`
+    : `${access.display_name} · ${access.role_title}`;
+  $('goLanding').textContent = 'לדוח שלי — ' + pageTitle(access, access.landing);
+  $('goLanding').onclick = () => location.replace(fresh(access.landing));
+
+  if(access.impersonating){
+    $('exitPreview').classList.remove('hidden');
+    $('exitPreview').onclick = () => A.setViewAs(null);
+  }
+
+  if(DENIED){
+    $('actions').classList.add('hidden');
+    $('postActions').classList.remove('hidden');
+    say(access.impersonating
+      ? `בתצוגה כ<b>${esc(access.role_title)}</b> אין הרשאה לדוח <b>${esc(DENIED)}</b> — זו ההתנהגות הצפויה.`
+      : `אין לך הרשאה לדוח <b>${esc(pageTitle(access, DENIED))}</b>.`, true);
+    return;
+  }
+
+  const wanted = justSignedInNext || NEXT;
+  const dest = (wanted && A.allowedHere(access, wanted)) ? wanted : access.landing;
+  say('מעביר לדוח…');
+  location.replace(fresh(dest));
+})();
+</script>
+</body>
+</html>

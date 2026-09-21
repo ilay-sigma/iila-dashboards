@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>תחרויות · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1>תחרויות</h1>
+  <select id="month" title="חודש"></select>
+  <span class="sub" id="asof"></span>
+</header>
+
+<div class="wrap">
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card pastel-lavender" data-write>
+    <h2>תחרות חדשה <span class="note">סופר אדמין · תבנית מלאה</span></h2>
+    <div class="info">שם · פרק זמן · מי משתתף (מחלקות או אנשים) · התנאים במילים · מדד ועד שלושה יעדים. כל משתתף/ת יראה את ההתקדמות שלו/ה בראש כל דוח.</div>
+    <form class="add-form" id="compForm" style="padding:12px 18px; gap:10px">
+      <input type="text" id="cTitle" placeholder="שם התחרות" required style="min-width:200px" />
+      <label class="sub">מ־<input type="date" id="cFrom" /></label>
+      <label class="sub">עד<input type="date" id="cTo" /></label>
+      <input type="text" id="cRule" placeholder="התנאים במילים — מה צריך לעשות" style="min-width:320px" />
+      <select id="cMetric" title="המדד שנמדד">
+        <option value="">בלי יעד מדיד</option>
+        <optgroup label="מתאמות פגישות"><option value="arrivals">הגעות</option><option value="bookings">קביעות</option><option value="fifty">אשראי 50 ₪</option><option value="close_pct">אחוז סגירה</option></optgroup>
+        <optgroup label="ייעוצים פרונטליים"><option value="paid">שולם</option><option value="offers">הצעות</option><option value="avg_paid_per_offer">ממוצע להצעה</option></optgroup>
+        <optgroup label="מכירות המחלקות"><option value="performance">מכירות</option></optgroup>
+        <optgroup label="משותף"><option value="closings">סגירות</option></optgroup>
+      </select>
+      <input type="number" id="cGoal1" placeholder="יעד 1" step="any" style="width:84px" /><input type="text" id="cGoal1L" placeholder="הפרס ביעד 1" style="width:140px" />
+      <input type="number" id="cGoal2" placeholder="יעד 2" step="any" style="width:84px" /><input type="text" id="cGoal2L" placeholder="הפרס ביעד 2" style="width:140px" />
+      <input type="number" id="cGoal3" placeholder="יעד 3" step="any" style="width:84px" /><input type="text" id="cGoal3L" placeholder="הפרס ביעד 3" style="width:140px" />
+      <div class="pickwrap"><span class="sub">מחלקות בתחרות:</span><span class="pickchips" id="cDepts"></span></div>
+      <div class="pickwrap"><span class="sub">אנשים (לא חובה — ריק = כל המחלקות שנבחרו):</span><span class="pickchips" id="cPeople"></span></div>
+      <input type="text" id="cNotes" placeholder="הערה פנימית (לא חובה)" style="min-width:200px" />
+      <button class="btn sm" type="submit">הוספת תחרות</button>
+    </form>
+  </div>
+
+  <div class="err hidden" id="err"></div>
+  <div id="list"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script src="js/auth-config.js?v=20260921m"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/config.js?v=20260918y"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script>
+const rest = UI.rest, esc = UI.esc, money = UI.money, int = UI.int, pct = UI.pct, q = UI.q, heb = UI.heb;
+let MONTH = null, COMPS = [], PROG = [], DEPT_PICK = new Set(), PEOPLE_PICK = new Set();
+
+// המדדים והפורמט שלהם — אותם שמות כמו ב-DB
+const METRIC = {
+  arrivals:['הגעות', int], bookings:['קביעות', int], fifty:['אשראי 50 ₪', int], close_pct:['אחוז סגירה', v=>pct(v,0)],
+  paid:['שולם', money], offers:['הצעות', int], avg_paid_per_offer:['ממוצע להצעה', money],
+  performance:['מכירות', money], closings:['סגירות', int],
+};
+const fmtOf = m => (METRIC[m] || ['', int])[1];
+const nameOf = m => (METRIC[m] || [''])[0];
+const deptTitle = k => (UI.access().departments||[]).find(d=>d.dept_key===k)?.title || k;
+const staffList = () => (UI.access().preview_options||[]).filter(o=>o.level==='staff' && o.label)
+  .map(o=>({label:o.label, dept:o.dept})).sort((a,b)=>String(a.label).localeCompare(String(b.label),'he'));
+
+async function load(){
+  const e = document.getElementById('err'); e.classList.add('hidden');
+  try{
+    [COMPS, PROG] = await Promise.all([
+      rest(`competitions?period_month=eq.${MONTH}&order=created_at.desc`),
+      rest(`competition_progress?period_month=eq.${MONTH}`).catch(()=>[]),
+    ]);
+  }catch(err){ e.classList.remove('hidden'); e.textContent = 'טעינה נכשלה: ' + err.message; return; }
+  render();
+}
+
+function render(){
+  const me = UI.label();
+  const mineRows = PROG.filter(r=>String(r.staff_label||'').trim() === String(me||'').trim());
+  const active = COMPS.filter(c=>!c.ends_on || c.ends_on >= UI.today());
+  document.getElementById('tiles').innerHTML = [
+    ['תחרויות בחודש', int(COMPS.length), `${int(active.length)} פעילות עכשיו`],
+    ['התחרויות שלי', int(new Set(mineRows.map(r=>r.comp_id)).size), me ? `על שם ${esc(me)}` : 'אין שורה אישית'],
+    ['יעדים שהשגתי', int(mineRows.reduce((s,r)=>s+Number(r.goals_done||0),0)), 'בכל התחרויות שלי'],
+  ].map(([k,v,m])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="m">${m}</div></div>`).join('');
+  UI.countUp(document.getElementById('tiles'));
+
+  // קבוצה לכל מחלקה — חלון תחרויות נפרד לכל אחת
+  const byDept = new Map();
+  COMPS.forEach(c=>{ (c.departments||[c.department]).forEach(d=>{ if(!byDept.has(d)) byDept.set(d, []); byDept.get(d).push(c); }); });
+  const host = document.getElementById('list');
+  host.innerHTML = [...byDept.entries()].map(([d, comps]) =>
+    `<div class="card"><h2>🏁 תחרויות — ${esc(deptTitle(d))} <span class="note">${int(comps.length)} תחרויות</span></h2>` +
+    comps.map(compCard).join('') + `</div>`).join('')
+    || '<div class="card"><div class="empty"><span class="big">🏆</span>אין תחרויות בחודש הזה</div></div>';
+  host.querySelectorAll('[data-delcomp]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('למחוק את התחרות?')) return;
+    try{ await UI.rpc('delete_competition',{p_comp_id:Number(b.dataset.delcomp)}); await load(); }catch(err){ UI.toast(err.message,'bad'); } });
+  host.querySelectorAll('form.awform').forEach(f=>f.onsubmit=async e=>{
+    e.preventDefault(); const fd = new FormData(f);
+    try{ await UI.rpc('add_competition_award',{p_comp_id:Number(f.dataset.comp), p_label:fd.get('rep'),
+      p_amount:Number(fd.get('amount')), p_notes:fd.get('notes')||null, p_kind:fd.get('kind')||'money'});
+      UI.toast('הפרס נוסף ✓','good'); await load(); }catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); } });
+  document.getElementById('foot').innerHTML =
+    `כל אדם רואה כאן את התחרויות שהוא רשום אליהן ואת ההתקדמות שלו. מנהל/ת רואה את כל המחלקות שלו/ה. ` +
+    `פס ההתקדמות מופיע גם בראש כל דוח.`;
+}
+
+function compCard(c){
+  const f = fmtOf(c.metric), rows = PROG.filter(r=>r.comp_id===c.comp_id).sort((a,b)=>Number(b.value)-Number(a.value));
+  const goals = [[c.goal1_value,c.goal1_label],[c.goal2_value,c.goal2_label],[c.goal3_value,c.goal3_label]]
+    .filter(g=>g[0]!=null).map(g=>({v:Number(g[0]), label:g[1]||''})).sort((a,b)=>a.v-b.v);
+  const top = goals.length ? goals[goals.length-1].v : 0;
+  const me = UI.label(), canW = UI.canWrite();
+  const live = !c.ends_on || c.ends_on >= UI.today();
+  return `<div class="compblock ${live?'live':'ended'}">
+    <div class="cb-head" style="padding:10px 18px 0">
+      <span class="cb-cup">🏆</span><span class="cb-title">${esc(c.title)}</span>
+      <span class="cb-when">${esc(UI.dm(c.starts_on))}–${esc(UI.dm(c.ends_on))}${live?'':' · הסתיימה'}</span>
+      ${c.metric?`<span class="chip lavender">מדד: ${esc(nameOf(c.metric))}</span>`:''}
+      ${canW?`<button class="btn ghost xs" data-delcomp="${c.comp_id}" style="margin-inline-start:auto">מחיקה</button>`:''}
+    </div>
+    ${c.rule_text?`<div class="info rule">🎯 <b>התנאים:</b> ${esc(c.rule_text)}</div>`:''}
+    <div class="row" style="padding:4px 18px;gap:8px;flex-wrap:wrap">
+      ${goals.map((g,i)=>`<span class="chip lemon">יעד ${i+1}: <b>${f(g.v)}</b>${g.label?` · ${esc(g.label)}`:''}</span>`).join('')}
+      ${(c.participants||[]).length?`<span class="sub">משתתפים: ${(c.participants||[]).map(esc).join(' · ')}</span>`
+        :`<span class="sub">משתתפים: כל ${(c.departments||[c.department]).map(d=>esc(deptTitle(d))).join(' + ')}</span>`}
+    </div>
+    ${rows.length?`<div class="scroll"><table class="mini inner"><thead><tr><th>מי</th><th>${esc(nameOf(c.metric))}</th><th>התקדמות</th><th>מצב</th></tr></thead><tbody>` +
+      rows.map(r=>{ const v=Number(r.value)||0, next=r.next_goal==null?null:Number(r.next_goal);
+        return `<tr class="${String(r.staff_label).trim()===String(me||'').trim()?'me':''}">` +
+          `<td>${esc(r.staff_label)}</td><td class="num">${f(v)}</td>` +
+          `<td>${UI.meter(top?Math.min(1,v/top):0)}</td>` +
+          `<td>${next==null?'<span class="chip good">✓ כל היעדים</span>':`<span class="chip warn">עוד ${f(Math.max(0,next-v))} ליעד הבא</span>`}` +
+          `${Number(r.goals_done)?` <span class="chip good">${int(r.goals_done)} יעדים</span>`:''}</td></tr>`; }).join('') +
+      `</tbody></table></div>`:'<div class="empty small">אין עדיין נתונים למשתתפים</div>'}
+    ${canW?`<form class="add-form awform" data-comp="${c.comp_id}" style="padding:8px 18px 12px">
+      <select name="rep">${rows.map(r=>`<option>${esc(r.staff_label)}</option>`).join('')}</select>
+      <select name="kind"><option value="money">₪ כסף</option><option value="arrivals">＋ הגעות</option></select>
+      <input type="number" name="amount" placeholder="כמה" step="any" required style="width:100px" />
+      <input type="text" name="notes" placeholder="הערה (על מה הפרס)" style="min-width:220px" />
+      <button class="btn xs" type="submit">הוספת פרס</button></form>`:''}
+  </div>`;
+}
+
+// ---- בוררי מחלקות ואנשים בטופס
+function buildPickers(){
+  const scope = UI.access().scope || [];
+  const depts = (UI.access().departments||[]).filter(d=>d.dept_key!=='managers' && (!scope.length || scope.includes(d.dept_key)));
+  const dh = document.getElementById('cDepts');
+  dh.innerHTML = depts.map(d=>`<button class="pick" type="button" data-d="${esc(d.dept_key)}">${esc(d.title)}</button>`).join('');
+  dh.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{ const k=b.dataset.d;
+    DEPT_PICK.has(k)?DEPT_PICK.delete(k):DEPT_PICK.add(k); b.classList.toggle('on', DEPT_PICK.has(k)); buildPeople(); });
+  buildPeople();
+}
+function buildPeople(){
+  const ph = document.getElementById('cPeople');
+  const list = staffList().filter(p=>!DEPT_PICK.size || DEPT_PICK.has(p.dept));
+  ph.innerHTML = list.map(p=>`<button class="pick ${PEOPLE_PICK.has(p.label)?'on':''}" type="button" data-p="${esc(p.label)}">${esc(p.label)}</button>`).join('')
+    || '<span class="sub">בחר/י מחלקה כדי לראות אנשים</span>';
+  ph.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{ const k=b.dataset.p;
+    PEOPLE_PICK.has(k)?PEOPLE_PICK.delete(k):PEOPLE_PICK.add(k); b.classList.toggle('on', PEOPLE_PICK.has(k)); });
+}
+
+document.getElementById('compForm')?.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const num = id => { const v=document.getElementById(id).value; return v===''?null:Number(v); };
+  const txt = id => document.getElementById(id).value.trim() || null;
+  const mt = document.getElementById('cMetric').value;
+  if(mt && num('cGoal1')==null){ UI.toast('בחרת מדד — צריך לפחות יעד אחד','bad'); return; }
+  if(!DEPT_PICK.size){ UI.toast('צריך לבחור לפחות מחלקה אחת','bad'); return; }
+  const depts = [...DEPT_PICK];
+  try{
+    const id = await UI.rpc('add_competition',{ p_department: depts[0], p_month: MONTH, p_title: txt('cTitle'),
+      p_notes: txt('cNotes'), p_rule: txt('cRule'), p_metric: mt||null,
+      p_starts: txt('cFrom'), p_ends: txt('cTo'),
+      p_goal1: num('cGoal1'), p_goal1_label: txt('cGoal1L'), p_goal2: num('cGoal2'), p_goal2_label: txt('cGoal2L'),
+      p_goal3: num('cGoal3'), p_goal3_label: txt('cGoal3L') });
+    await UI.rpc('set_competition_scope', { p_comp_id: Number(id), p_departments: depts, p_participants: [...PEOPLE_PICK] });
+    ['cTitle','cRule','cGoal1','cGoal1L','cGoal2','cGoal2L','cGoal3','cGoal3L','cNotes'].forEach(x=>document.getElementById(x).value='');
+    PEOPLE_PICK.clear(); buildPeople();
+    UI.toast('התחרות נוספה ✓','good'); await load();
+  }catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); }
+});
+
+document.addEventListener('access-ready', () => { UI.applyVisibility(); if(UI.canWrite()) buildPickers(); });
+(async function init(){
+  try{
+    const months = await rest('competitions?select=period_month&order=period_month.desc').catch(()=>[]);
+    const cur = UI.thisMonth();
+    const list = [...new Set([cur, ...(months||[]).map(m=>m.period_month)])].sort().reverse();
+    const sel = document.getElementById('month'); UI.fillMonths(sel, list, cur); MONTH = cur;
+    document.getElementById('asof').textContent = 'נכון ל־' + new Date().toLocaleDateString('he-IL');
+    sel.onchange = async()=>{ MONTH = sel.value; await load(); };
+    await load();
+  }catch(err){ document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<div class="card"><div class="err">טעינה נכשלה: ${esc(err.message)}</div></div>`); }
+})();
+</script>
+</body>
+</html>

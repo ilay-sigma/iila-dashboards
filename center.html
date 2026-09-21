@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="favicon.png" type="image/png" />
+<title>מכירות המחלקות · מעקב המכירות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/vendor/open-props.min.css?v=1.7.16" />
+<link rel="stylesheet" href="assets/design-system.css?v=20260921u" />
+</head>
+<body class="has-side">
+<header>
+  <a class="brand" target="_blank" rel="noopener noreferrer" aria-label="אילה ברלין — Pro Cosmetics"></a>
+  <h1 id="pageTitle">מכירות המחלקות</h1>
+  <select id="month" title="חודש"></select>
+  <label class="toggle" title="להציג גם עובדות בלי מכירות החודש"><input type="checkbox" id="showZero" /> גם ללא פעילות</label>
+  <span class="sub" id="asof"></span>
+  <nav class="tabs" id="tabs">
+    <button data-tab="dept"   aria-selected="true">לפי מחלקה</button>
+    <button data-tab="mine"   aria-selected="false" class="hidden">המכירות שלי</button>
+    <button data-tab="bonus"  aria-selected="false" class="hidden">סימולטור בונוס</button>
+    <button data-tab="annual" aria-selected="false">השוואה שנתית</button>
+    <button data-tab="setup"  aria-selected="false" data-write>הגדרות</button>
+  </nav>
+</header>
+<div class="wrap">
+  <div class="dept-tabs" id="deptTabs"></div>
+
+  <!-- ================= לפי מחלקה ================= -->
+  <section id="tab-dept">
+    <div class="card pastel-mint hidden" id="myLadderCard">
+      <h2>🪜 מדרגות הבונוס שלי <span class="note" id="myLadderNote"></span></h2>
+      <div class="body" id="myLadder"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="card pastel-lemon" id="podiumCard">
+      <h2>🏆 גביעי המכירות <span class="note">לפי סך המכירות החודש. שלושת הראשונות מקבלות גביע גם בעמודת # בטבלה.</span></h2>
+      <div id="podium"></div>
+    </div>
+    <div class="card">
+      <h2><span id="tblTitle">ריכוז</span> <span class="note">ממוין מהמוכר/ת הכי הרבה · הסכומים באלפי ₪ (K)</span></h2>
+      <div class="scroll"><table id="grid" class="rank-first"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <!-- ================= השוואה שנתית ================= -->
+  <!-- ================= סימולטור בונוס ================= -->
+  <section id="tab-bonus" class="hidden">
+    <div class="tiles" id="bonusTiles"></div>
+    <div class="cols two">
+      <div class="card pastel-mint">
+        <h2>רוצה בונוס של… <span class="note">כמה צריך למכור בשבילו</span></h2>
+        <div class="body sim">
+          <label>הבונוס שאני רוצה החודש
+            <input type="number" id="simBonus" min="0" step="100" placeholder="למשל 3000" inputmode="numeric" />
+            <span class="unit">₪</span>
+          </label>
+          <div id="simBonusOut" class="simout"></div>
+        </div>
+      </div>
+      <div class="card pastel-sky">
+        <h2>אם אסיים את החודש עם… <span class="note">איזה בונוס זה נותן</span></h2>
+        <div class="body sim">
+          <label>סך המכירות שלי בסוף החודש
+            <input type="number" id="simSales" min="0" step="500" placeholder="למשל 10000" inputmode="numeric" />
+            <span class="unit">₪</span>
+          </label>
+          <div id="simSalesOut" class="simout"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card pastel-lavender">
+      <h2>מודל הבונוס שלי <span class="note">איך זה עובד, בשורה אחת</span></h2>
+      <div id="bonusModel"></div>
+    </div>
+    <div class="card">
+      <h2>סולם המדרגות שלי <span class="note" id="ladderNote"></span></h2>
+      <div class="info">אחוז הבונוס נקבע לפי אחוז העמידה ביעד, והוא חל על <b>כל</b> המכירות של החודש — ולכן קפיצה למדרגה הבאה מעלה גם את הבונוס על מה שכבר מכרת. לחיצה על שורה ממלאת אותה בסימולטור.</div>
+      <div class="scroll"><table id="ladder"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="foot" id="bonusFoot"></div>
+  </section>
+
+  <!-- ================= המכירות שלי ================= -->
+  <section id="tab-mine" class="hidden">
+    <div class="tiles" id="mineTiles"></div>
+    <div class="card pastel-mint">
+      <h2>המכירות שלי <span class="note" id="mineNote"></span></h2>
+      <div class="info">כל תוכנית שנזקפה לך החודש, לפי תאריך. שמות הלקוחות מקוצרים (שם פרטי + שתי אותיות) ואין כאן טלפונים.</div>
+      <div class="info mgr" id="mineRule"></div>
+      <div id="mineList"></div>
+    </div>
+    <div class="card">
+      <h2>ממתינות לתשלום <span class="note" id="openNote">מהחודש ומחודש שעבר</span></h2>
+      <div class="info">תוכניות שנפתחו ועדיין לא נספרו בביצוע, כי התשלום לא הגיע לסף. <b>מה ששולם חלקית מסומן</b> — שם הכסף הכי קרוב לסגירה.</div>
+      <div id="openList"></div>
+    </div>
+  </section>
+
+  <section id="tab-annual" class="hidden">
+    <div class="card">
+      <h2>לפי חודשים
+        <label class="sub" style="margin-inline-start:auto; display:flex; align-items:center; gap:8px;">מי <select id="annWho"></select> מדד <select id="annMetric"><option value="performance">ביצוע</option><option value="attainment">% עמידה ביעד</option><option value="offers">הצעות</option><option value="closings">סגירות</option></select></label>
+      </h2>
+      <div class="chartwrap" id="annChart"></div>
+      <div id="annTrend"></div>
+    </div>
+    <div class="card">
+      <h2>לפי שבועות <span class="note">כל נקודה = שבוע שלם, ראשון עד שבת · התווית היא טווח התאריכים</span></h2>
+      <div class="chartwrap" id="weekChart"></div>
+    </div>
+    <!-- טבלת השוואה בין עובדות — לא מוצגת לחבר/ת צוות -->
+    <div class="card" data-level="super_admin,manager">
+      <h2>טבלת חודשים <span class="note" id="annGridNote">אותו מדד</span></h2>
+      <div class="scroll"><table id="annGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= הגדרות ================= -->
+  <section id="tab-setup" class="hidden">
+    <div class="card">
+      <h2>מדרגות הבונוס <span class="note">כפי שמוגדרות לחודש הנבחר · היעדים נערכים בעיפרון בטבלה, התפקידים בניהול משתמשים</span></h2>
+      <div class="scroll"><table id="tiersGrid"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+</div>
+
+<script src="js/auth-config.js?v=20260918y"></script>
+<script src="js/auth.js?v=20260921m"></script>
+<script src="js/nav.js?v=20260921k"></script>
+<script src="js/explain.js?v=20260918y"></script>
+<script src="js/ui.js?v=20260921u"></script>
+<script src="js/comp-banner.js?v=20260921q"></script>
+<script>
+const rest = UI.rest, esc = UI.esc, k = UI.k, pct = UI.pct, q = UI.q;
+let MONTH = null, MONTHS = [], ROWS = [], TIERS = [], DEPT = null, ANN_ROWS = null, WEEK = null;
+const DEPT_COLORS = { cosmetics:'var(--p-pink)', office:'var(--p-sky)', mtl:'var(--p-mint)', mtl_active:'var(--p-sage)', phone:'var(--p-lavender)', phone_active:'var(--p-lavender)', managers:'var(--p-lemon)' };
+const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='setup') renderSetup(); if(t==='mine') renderMine(); if(t==='bonus') renderBonus(); });
+const val = r => Number(r.performance||0) * (r.target_unit==='thousands' ? 1000 : 1);
+const tgt = r => r.target==null ? null : Number(r.target) * (r.target_unit==='thousands' ? 1000 : 1);
+const fc  = r => Number(r.forecast_month_end||0) * (r.target_unit==='thousands' ? 1000 : 1);
+// צבע מספר הביצוע לפי הסכום עצמו: מעל 10,000 ירוק · 5,000–10,000 כתום · מתחת ורוד
+// למת"ליות (ובמיוחד אקטיב) יש מודל בונוס נפרד שאינו כאן — לא מציגים בונוס בכלל
+const noBonus = r => !r || r.department==='mtl_active' || r.department==='mtl' || !r.bonus_tier_set;
+const perfCls = v => Number(v) >= 10000 ? 'pos' : Number(v) >= 5000 ? 'warn' : 'neg';
+const bonus = r => r.bonus_final==null ? null : Number(r.bonus_final);
+// ממוצע לפגישה = ביצוע ÷ מספר ההצעות. זה המדד שמעניק את הגביעים: הוא מודד
+// את איכות הפגישה ולא את כמות הפגישות, ולכן גם מי שעבדה פחות ימים יכולה לזכות.
+const avgPerMeeting = r => Number(r.offers) ? val(r)/Number(r.offers) : 0;
+const SORT = { key: null, dir: null };   // מיון לפי לחיצה על כותרת
+let PREV_ROWS = [];                      // שורות החודש הקודם, ל"חודש שעבר" באריחים
+const prevOf = name => PREV_ROWS.find(r => r.display_name === name) || null;
+const prevDept = () => PREV_ROWS.filter(r => DEPT==='all' || r.department===DEPT);
+
+async function init(){
+  const rows = await rest('front_center?select=period_month&order=period_month.desc');
+  MONTHS = [...new Set(rows.map(r=>r.period_month))];
+  const sel = document.getElementById('month');
+  UI.fillMonths(sel, MONTHS, MONTHS[0]);
+  sel.onchange = ()=>{ MONTH = sel.value; load(); };
+  document.getElementById('showZero').onchange = ()=>renderDept();
+  MONTH = MONTHS[0];
+  if(!MONTH){ document.getElementById('tiles').innerHTML='<div class="err">אין נתונים.</div>'; return; }
+  await load();
+}
+async function load(){
+  let prevRows;
+  [ROWS, TIERS, prevRows] = await Promise.all([
+    rest(`front_center?period_month=eq.${MONTH}&order=dept_sort,performance.desc`),
+    rest(`center_tiers?period_month=eq.${MONTH}&order=tier_set,min_value`),
+    // החודש הקודם — רק כדי להציג "חודש שעבר" באריחים
+    rest(`front_center?period_month=eq.${UI.prevMonth(MONTH)}&select=department,display_name,performance,target,target_unit,offers,closings`),
+  ]);
+  ROWS = ROWS.filter(r=>r.department!=='managers');
+  document.dispatchEvent(new CustomEvent('center-rows'));
+  PREV_ROWS = (prevRows||[]).filter(r=>r.department!=='managers');
+  document.getElementById('asof').textContent = `${UI.one(ROWS[0]?.workdays_elapsed)} מתוך ${UI.one(ROWS[0]?.workdays_in_month)} ימי עבודה · נכון ל-${new Date().toLocaleDateString('he-IL')}`;
+  // מחלקות זמינות (לפי ההרשאה): מהשורות + מהמחלקות שמותר לראות
+  const depts = new Map();
+  ROWS.forEach(r=>depts.set(r.department, {title:r.dept_title||r.department, sort:r.dept_sort||99, n:(depts.get(r.department)?.n||0)+1}));
+  const a = UI.access();
+  (a.departments||[]).forEach(d=>{ if(['office','cosmetics','mtl','mtl_active'].includes(d.dept_key) && (!(a.scope||[]).length || (a.scope||[]).includes(d.dept_key)) && !depts.has(d.dept_key) && (UI.isMgr() || d.dept_key===a.department)) depts.set(d.dept_key,{title:d.title,sort:d.sort,n:0}); });
+  const list = [...depts.entries()].sort((x,y)=>x[1].sort-y[1].sort);
+  if(!DEPT || !depts.has(DEPT)) DEPT = (UI.isStaff() ? a.department : null) || (list.length>1 && UI.isMgr() ? 'all' : list[0]?.[0]);
+  document.getElementById('deptTabs').innerHTML =
+    (UI.isMgr() && list.length>1 ? `<button data-dept="all" aria-selected="${DEPT==='all'}">כל המחלקות<small>${ROWS.length} עובדות</small></button>` : '') +
+    list.map(([key,d])=>`<button data-dept="${esc(key)}" aria-selected="${DEPT===key}">${esc(d.title)}<small>${d.n} עובדות</small></button>`).join('');
+  document.querySelectorAll('#deptTabs button').forEach(b=>b.onclick=()=>{ DEPT=b.dataset.dept; document.querySelectorAll('#deptTabs button').forEach(x=>x.setAttribute('aria-selected', String(x===b))); renderDept(); if(tabs.current()==='annual') renderAnnual(); });
+  renderDept();
+  if(tabs.current()==='annual') renderAnnual();
+  if(tabs.current()==='setup') renderSetup();
+}
+
+// אריח הבונוס: מה כבר הרווחתי, ולאן הקצב הנוכחי מוביל. הצפי מחושב בדיוק
+// כמו הבונוס עצמו — לפי המדרגה שבה ינחת הביצוע החזוי, לא לפי המדרגה הנוכחית.
+function tiersOfSet(set){
+  return (TIERS||[]).filter(t=>t.tier_set===set).sort((a,b)=>Number(a.min_value)-Number(b.min_value));
+}
+function bonusTile(me){
+  const tiers = tiersOfSet(me.bonus_tier_set), target = tgt(me);
+  if(!tiers.length || !target)
+    return `<div class="tile"><div class="k">בונוס ${q('bonus_rate')}</div><div class="v small">${UI.bonusHtml(bonus(me))}</div>` +
+           `<div class="m">${me.bonus_rate!=null?`מדרגה של ${pct(me.bonus_rate,0)}`:'טרם נקבעה מדרגה'}</div></div>`;
+  const now = val(me), nowRate = rateAt(now, target, tiers), nowB = nowRate==null?0:now*nowRate;
+  const f = fc(me), fRate = rateAt(f, target, tiers), fB = fRate==null?0:f*fRate;
+  const up = fB > nowB;
+  return `<div class="tile"><div class="k">הבונוס שלי ${q('bonus_final')}</div>` +
+    `<div class="v small">${UI.bonusHtml(nowB, {zero:'₪ 0'})}</div>` +
+    `<div class="m">מדרגה ${nowRate!=null?pct(nowRate,0):'—'} · צפי לסוף החודש ${UI.bonusHtml(fB, {zero:'₪ 0'})}` +
+    `${fRate!=null && fRate!==nowRate?` (מדרגה ${pct(fRate,0)})`:''}</div></div>`;
+}
+
+// האריחים של חבר/ת צוות: כמה עשיתי, איפה אני מול היעד, מה הקצב שלי,
+// כמה הצעות וסגירות, ומה הבונוס — הכול אישי, בלי מספרי המחלקה.
+function myTiles(me, rows, sumV){
+  const place = rows.indexOf(me) + 1, target = tgt(me), a = Number(me.attainment);
+  const fcRatio = target ? fc(me)/target : null;
+  return [
+    `<div class="tile hero ${perfCls(val(me))}"><div class="k">הביצוע שלי החודש ${q('performance')}</div><div class="v" data-count="${val(me)}" data-fmt="k">${k(val(me))}</div>` +
+      `<div class="m">${esc(me.display_name)}${rows.length>1?` · מקום ${place} מתוך ${rows.length}`:''}${Number(me.prev_completions)?` · כולל ${k(me.prev_completions)} השלמות`:''}</div>` +
+      `${UI.prevLine(val(me), (p => p ? val(p) : null)(prevOf(me.display_name)), k)}</div>`,
+    `<div class="tile ${UI.paceCls(a)}"><div class="k">אני מול היעד שלי ${q('attainment_center')}</div><div class="v" data-count="${a||0}" data-fmt="pct0">${target?pct(a,0):'—'}</div>` +
+      `<div class="m">${target?`יעד ${k(target)} · נשארו ${k(Math.max(0,target-val(me)))}`:'לא הוגדר לך יעד'}</div></div>`,
+    `<div class="tile ${UI.paceCls(fcRatio)}"><div class="k">הקצב שלי — צפי לסוף החודש ${q('forecast')}</div><div class="v" data-count="${fc(me)}" data-fmt="k">${k(fc(me))}</div>` +
+      `<div class="m">${fcRatio!=null?UI.statusPill(fcRatio, pct(fcRatio,0)+' מהיעד'):'לפי הקצב עד כה'} ${q('pace_color')}</div></div>`,
+    `<div class="tile"><div class="k">ההצעות שלי</div><div class="v small" data-count="${me.offers||0}" data-fmt="int">${UI.int(me.offers)}</div>` +
+      `<div class="m">${UI.int(me.closings)} נסגרו · ${Number(me.offers)?pct(Number(me.closings)/Number(me.offers),0):'—'} סגירה</div>` +
+      `${UI.prevLine(me.offers, (p => p ? p.offers : null)(prevOf(me.display_name)), UI.int)}</div>`,
+    noBonus(me) ? `<div class="tile"><div class="k">הסגירות שלי</div><div class="v small" data-count="${me.closings||0}" data-fmt="int">${UI.int(me.closings)}</div><div class="m">${Number(me.offers)?pct(Number(me.closings)/Number(me.offers),0)+' מההצעות':'—'}</div></div>` : bonusTile(me),
+    UI.isStaff()
+      ? `<div class="tile"><div class="k">השלמות מחודש שעבר — שלי ${q('prev_completions')}</div><div class="v small">${k(me.prev_completions)}</div><div class="m">נכללות בביצוע שלי</div></div>`
+      : `<div class="tile"><div class="k">המחלקה כולה <span class="sub">להשוואה</span></div><div class="v small">${k(sumV)}</div>` +
+      `<div class="m">${rows.length} עובדות · החלק שלי ${sumV?pct(val(me)/sumV,0):'—'}</div></div>`,
+  ].join('');
+}
+
+function rowsForDept(){
+  const showZero = document.getElementById('showZero').checked;
+  const rows = ROWS.filter(r => (DEPT==='all' || r.department===DEPT) && (showZero || val(r) > 0 || r.is_me)).sort((a,b)=>val(b)-val(a));
+  return UI.applySort(rows, SORT);
+}
+
+function renderDept(){
+  const rows = rowsForDept();
+  const withT = rows.filter(r=>tgt(r));
+  const sumV = rows.reduce((s,r)=>s+val(r),0), sumT = withT.reduce((s,r)=>s+tgt(r),0), sumF = rows.reduce((s,r)=>s+fc(r),0);
+  const ratio = sumT ? sumF/sumT : null;
+  const me = rows.find(r=>r.is_me);
+  const tiles = document.getElementById('tiles');
+  // חבר/ת צוות רואה קודם כל את עצמו/ה: ההישג האישי הוא הכותרת, והמחלקה היא ההקשר.
+  const pRows = prevDept(), pSumV = pRows.reduce((s,r)=>s+val(r),0);
+  if(me){ tiles.innerHTML = myTiles(me, rows, sumV); UI.countUp(tiles); }
+  else tiles.innerHTML = [
+    `<div class="tile hero"><div class="k">ביצוע החודש ${q('performance')}</div><div class="v" data-count="${sumV}" data-fmt="k">${k(sumV)}</div><div class="m">${rows.length} עובדות · ${UI.int(rows.reduce((s,r)=>s+Number(r.closings||0),0))} סגירות</div>${UI.prevLine(sumV, pRows.length?pSumV:null, k)}</div>`,
+    `<div class="tile"><div class="k">יעד ${q('attainment_center')}</div><div class="v small">${sumT?k(sumT):'—'}</div><div class="m">${sumT?`${pct(sumV/sumT,0)} מהיעד עד כה`:'אין יעדים'}</div></div>`,
+    `<div class="tile ${UI.paceCls(ratio)}"><div class="k">קצב — צפי לסוף החודש ${q('forecast')}</div><div class="v" data-count="${sumF}" data-fmt="k">${k(sumF)}</div><div class="m">${ratio!=null?UI.statusPill(ratio, pct(ratio,0)+' מהיעד'):'—'} ${q('pace_color')}</div>${UI.prevLine(sumF, pRows.length?pSumV:null, k, 'בפועל חודש שעבר')}</div>`,
+    me ? `<div class="tile ${UI.paceCls(me.attainment)}"><div class="k">אני: ${esc(me.display_name)}</div><div class="v small" data-count="${val(me)}" data-fmt="k">${k(val(me))}</div><div class="m">${tgt(me)?`${pct(me.attainment,0)} מהיעד · מקום ${rows.indexOf(me)+1}`:'ללא יעד'}</div></div>`
+       : `<div class="tile"><div class="k">ממוצע לעובד/ת</div><div class="v small">${rows.length?k(sumV/rows.length):'—'}</div><div class="m">${withT.length} עם יעד</div></div>`,
+    `<div class="tile"><div class="k">מדרגת בונוס ${q('bonus_rate')}</div><div class="v small">${me ? (me.bonus_rate!=null?pct(me.bonus_rate,0):'—') : (UI.isMgr()?`${rows.filter(r=>r.bonus_rate!=null).length} במדרגה`:'—')}</div><div class="m">${me && bonus(me)!=null ? `בונוס סופי ${k(bonus(me))}` : (UI.isMgr()?`סה"כ בונוסים ${k(rows.reduce((s,r)=>s+(bonus(r)||0),0))}`:'')}</div></div>`,
+  ].join('');
+  if(!me) UI.countUp(tiles);
+  drawMyLadder(me, rows);
+
+  // דירוג הגביעים לפי הממוצע לפגישה; מי שאין לה פגישות אינה מדורגת.
+  // במחלקות שאינן פרונטליות הדירוג הוא לפי סך המכירות בלבד — הממוצע לפגישה לא רלוונטי כאן.
+  const ranked = rows.filter(r=>val(r) > 0).slice().sort((a,b)=>val(b)-val(a));
+  const rankOf = new Map(ranked.map((r,i)=>[r.display_name, i+1]));
+  const top = ranked.slice(0,3).map(r=>({name:r.display_name, value:val(r),
+    sub:`${UI.int(r.offers)} הצעות · ${UI.int(r.closings)} סגירות`}));
+  document.getElementById('podium').innerHTML = ranked.length ? UI.podium(top, {fmt:k, kind:'cup'}) : '<div class="empty">אין נתונים</div>';
+  document.getElementById('podiumCard').classList.toggle('hidden', ranked.length < 2);
+
+  // "ריכוז מרכז" אינו דבר קיים: הדף נקרא על שם המחלקה — מכירות מטפלות / מנהלות משרד / מת"ליות
+  const deptName = DEPT==='all' ? 'המחלקות' : (rows[0]?.dept_title || UI.deptTitle(DEPT) || 'המחלקה');
+  document.getElementById('tblTitle').textContent = DEPT==='all' ? 'כל המחלקות' : deptName;
+  document.getElementById('pageTitle').textContent = `מכירות ${deptName}`;
+  document.title = `מכירות ${deptName} · מעקב המכירות`;
+  const maxV = Math.max(...rows.map(val), 1);
+  const head = ['🏆 #','שם','יעד','ביצוע','% עמידה ביעד','צפי לסוף החודש','הצעות','סגירות','השלמות מחודש קודם','מדרגת בונוס','בונוס סופי'];
+  const qs   = ['rank',null,null,'performance','attainment_center','forecast','offers','closings','prev_completions','bonus_rate','bonus_final'];
+  const keys = [null,'display_name','target','performance','attainment','forecast_month_end','offers','closings','prev_completions','bonus_rate','bonus_final'];
+  // מדליות יש רק אצל היועצות הפרונטליות; כאן עמודת # מציגה גביע לשלוש הראשונות לפי סך המכירות.
+  const gthead = document.querySelector('#grid thead');
+  gthead.innerHTML = `<tr>${head.map((h,i)=>`<th${UI.sortTh(SORT, keys[i], 'מיון לפי ' + h)}>${h} ${qs[i]?q(qs[i]):''}</th>`).join('')}</tr>`;
+  UI.sortOn(gthead, SORT, renderDept);
+  let html='', lastDept=null;
+  rows.forEach((r,i)=>{
+    if(DEPT==='all' && r.department!==lastDept){ lastDept=r.department; html += `<tr class="group dept" style="--dept-bg:${DEPT_COLORS[r.department]||'var(--panel3)'}"><td colspan="${head.length}">${esc(r.dept_title||r.department)}</td></tr>`; }
+    const t = tgt(r), a = r.attainment==null?null:Number(r.attainment), f = fc(r), fr = t ? f/t : null;
+    const tCell = document.createElement('td');
+    html += `<tr class="${r.is_me?'me':''}" data-cfg="${r.config_id}">` +
+      `<td>${UI.rank(rankOf.get(r.display_name) || (i+1), {kind:'cup', what:'סך המכירות', me:r.is_me})}</td>` +
+      `<td>${esc(r.display_name)}${r.is_me?' <span class="chip lemon">אני</span>':''}${r.calendar_alias?` <span class="sub">${esc(r.calendar_alias)}</span>`:''}</td>` +
+      `<td class="num tgtcell"></td>` +
+      `<td class="num">${UI.databar(val(r), t||maxV, perfCls(val(r)), k(val(r)))}</td>` +
+      `<td>${a==null?'<span class="dash">—</span>':UI.meter(a)}</td>` +
+      `<td class="num ${UI.paceCls(fr)}">${k(f)}${fr!=null?` <span class="sub">(${pct(fr,0)})</span>`:''}</td>` +
+      `<td class="num">${UI.int(r.offers)}</td>` +
+      `<td class="num">${UI.int(r.closings)}</td>` +
+      `<td class="num ${Number(r.prev_completions)?'':'dash'}">${Number(r.prev_completions)?k(Number(r.prev_completions)*(r.target_unit==='thousands'?1000:1)):'—'}</td>` +
+      `<td>${noBonus(r) ? '<span class="dash">—</span>' : r.bonus_rate==null ? (UI.isMgr()||r.is_me ? '<span class="dash">—</span>' : '<span class="dash" title="מוצג רק לבעל/ת השורה">🔒</span>') : `<button class="btn soft xs tiersbtn" type="button" data-set="${esc(r.bonus_tier_set||'')}" data-a="${a??''}">${pct(r.bonus_rate,0)} ▾</button>`}</td>` +
+      `<td class="num">${noBonus(r) ? '<span class="dash">—</span>' : bonus(r)==null ? (UI.isMgr()||r.is_me ? '<span class="dash">—</span>' : '<span class="dash">🔒</span>') : UI.bonusHtml(bonus(r))}</td></tr>`;
+  });
+  document.querySelector('#grid tbody').innerHTML = html || `<tr><td class="dash" colspan="${head.length}">אין עובדות עם פעילות החודש</td></tr>`;
+  // יעד — עריכה במקום לסופר אדמין
+  rows.forEach(r=>{
+    const tr = document.querySelector(`#grid tr[data-cfg="${r.config_id}"]`); if(!tr) return;
+    const cellEl = tr.querySelector('.tgtcell');
+    cellEl.appendChild(UI.inlineNumber({ value: tgt(r), fmt: v=>v==null?'—':k(v), step: 5000, title:'עריכת היעד (סופר אדמין / מנהל/ת)', allow: UI.canEditTargets(),
+      onSave: async v => { await UI.rpc('set_target', { p_kind:'center_target', p_month: MONTH, p_key: String(r.config_id), p_amount: v==null?null:(r.target_unit==='thousands'? v/1000 : v) }); await load(); } }));
+  });
+  document.querySelectorAll('.tiersbtn').forEach(b=>b.onclick=()=>showTiers(b.dataset.set, b.dataset.a));
+  document.getElementById('foot').innerHTML = `ביצוע = סך אחרי הנחה של תוכניות ששולמו מעל 95% (בלי מימון) + השלמות מחודש קודם · קצב לפי ימי העבודה של המחלקה ${q('forecast')} · מדרגת הבונוס והבונוס הכספי מוצגים רק לבעל/ת השורה ולמנהלים.`;
+}
+
+function showTiers(set, a){
+  const tiers = TIERS.filter(t=>t.tier_set===set);
+  const att = a===''?null:Number(a);
+  UI.modal({ title:`מדרגות הבונוס — ${esc(set)}`, body: `<div class="scroll"><table><thead><tr><th>מ-% עמידה</th><th>עד % עמידה</th><th>אחוז בונוס</th></tr></thead><tbody>${
+    tiers.map(t=>{ const on = att!=null && att>=Number(t.min_value) && att<Number(t.max_value);
+      return `<tr class="${on?'me':''}"><td class="num">${pct(t.min_value,0)}</td><td class="num">${Number(t.max_value)>=10?'∞':pct(t.max_value,0)}</td><td class="num"><b>${pct(t.rate,0)}</b>${on?' ← אתה כאן':''}</td></tr>`; }).join('') || '<tr><td colspan="3" class="dash">אין מדרגות</td></tr>'}</tbody></table></div>` +
+    `<div class="info">המדרגה נקבעת לפי ביצוע ÷ יעד. הבונוס = ביצוע × אחוז המדרגה. ${q('bonus_rate')}</div>` });
+}
+
+// ============================================================ סימולטור בונוס
+// המדרגה נקבעת לפי אחוז העמידה ביעד, והשיעור חל על כל הביצוע — בדיוק כמו
+// ב-marts.v_center_staff (bonus = performance × rate). כאן עובדים בשקלים
+// אמיתיים, ולכן אותו חישוב תקף גם למי שהיעד שלו נמדד באלפים.
+function myTiers(){ const me = ROWS.find(r=>r.is_me); if(!me) return [];
+  return TIERS.filter(t=>t.tier_set===me.bonus_tier_set).sort((a,b)=>Number(a.min_value)-Number(b.min_value)); }
+function rateAt(perf, target, tiers){
+  if(!target) return null;
+  const a = perf/target;
+  const t = tiers.find(x=>a >= Number(x.min_value) && a < Number(x.max_value));
+  return t ? Number(t.rate) : null;
+}
+const bonusAt = (perf, target, tiers) => { const r = rateAt(perf, target, tiers); return r==null ? null : perf*r; };
+// הביצוע המינימלי שמניב בונוס B. הסולם עולה, ולכן המדרגה הראשונה שמספיקה
+// היא גם הזולה ביותר במכירות.
+function perfForBonus(B, target, tiers){
+  for(const t of tiers){
+    const lo = Number(t.min_value)*target, hi = Number(t.max_value)*target, r = Number(t.rate);
+    if(!r) continue;
+    if(B <= lo*r) return lo;
+    if(B <= hi*r) return B/r;
+  }
+  return null;
+}
+function renderBonus(){
+  const me = ROWS.find(r=>r.is_me), tiers = myTiers();
+  const host = document.getElementById('bonusTiles');
+  if(!me || !tgt(me) || !tiers.length){
+    host.innerHTML = '<div class="empty"><span class="big">🎯</span>אין לך עדיין יעד או סולם מדרגות לחודש הזה, ולכן אי אפשר לדמות בונוס.</div>';
+    document.querySelector('#ladder tbody').innerHTML = ''; return;
+  }
+  const perf = val(me), target = tgt(me), rate = rateAt(perf, target, tiers), cur = rate==null?0:perf*rate;
+  const left = Math.max(0, Number(me.workdays_in_month) - Number(me.workdays_elapsed));
+  host.innerHTML = [
+    ['הביצוע שלי עד כה', k(perf), `${pct(perf/target,0)} מיעד ${k(target)}`],
+    ['הבונוס שלי כרגע', UI.bonusHtml(cur, {zero:'₪ 0'}), rate!=null?`מדרגה של ${pct(rate,0)}`:'טרם נקבעה מדרגה'],
+    ['ימי עבודה שנותרו', UI.one(left), left?`מתוך ${UI.one(me.workdays_in_month)} בחודש`:'החודש נגמר'],
+  ].map(([kk,v,m])=>`<div class="tile"><div class="k">${kk}</div><div class="v small">${v}</div><div class="m">${m}</div></div>`).join('');
+  drawModel(me, tiers, target, perf);
+  drawLadder(me, tiers, perf, target, left, rate);
+  document.getElementById('bonusFoot').innerHTML =
+    `החישוב זהה לזה שבדוח: מדרגה לפי ביצוע ÷ יעד, ובונוס = ביצוע × אחוז המדרגה ${q('bonus_final')} · ` +
+    `"ליום" מחלק את מה שנותר ב-${UI.one(left)} ימי העבודה שנשארו ${q('workdays')}. סימולציה בלבד — לא משנה שום נתון.`;
+  simFromBonus(); simFromSales();
+}
+// ההסבר נכתב מהנתונים עצמם ולא מקובע בטקסט, כך שאם ישנו את המדרגות או את
+// היעד — ההסבר משתנה איתם.
+function drawModel(me, tiers, target, perf){
+  const lowest = tiers[0], top = tiers[tiers.length-1];
+  const example = tiers.find(t=>Number(t.min_value)*target > perf) || top;
+  const exPerf = Math.max(Number(example.min_value)*target, perf);
+  document.getElementById('bonusModel').innerHTML =
+    `<div class="info"><b>היעד שלך לחודש: ${k(target)}.</b> אחוז הבונוס לא קבוע — הוא נקבע לפי <b>כמה אחוז מהיעד</b> השגת, ` +
+    `ונע בין ${pct(lowest.rate,0)} ל-${pct(top.rate,0)}. האחוז חל על <b>כל</b> המכירות של החודש ולא רק על מה שמעל המדרגה, ` +
+    `ולכן מעבר מדרגה מעלה גם את הבונוס על מה שכבר מכרת.</div>` +
+    `<div class="info mgr">לדוגמה, מהמצב שלך עכשיו: אם תגיעי ל-${k(exPerf)} (${pct(exPerf/target,0)} מהיעד) האחוז יהיה ` +
+    `${pct(example.rate,0)}, והבונוס ${UI.bonusHtml(exPerf*Number(example.rate))}. ` +
+    `זה ההבדל בין ${k(perf*(rateAt(perf,target,tiers)||0))} להיום לבין ${k(exPerf*Number(example.rate))} — על ${k(Math.max(0,exPerf-perf))} מכירות נוספות.</div>`;
+}
+
+const TIER_SET_TITLE = { sales_pct:'לפי אחוז עמידה ביעד', office_pct:'לפי אחוז עמידה ביעד', office_flat7:'7% קבוע — 70 ₪ על כל 1,000 ₪ מכירה',
+  hair_removal:'לפי סכום המכירות — הסרת שיער', face_and_hair:'לפי סכום המכירות — פנים + הסרה' };
+const setTitle = set => TIER_SET_TITLE[set] || set || '';
+// סולם מעוצב: מדרגה = פס צבעוני, המדרגה הנוכחית מסומנת "את כאן" עם התקדמות למדרגה הבאה
+function ladderSteps(tiers, perf, target){
+  const a = target ? perf/target : null;
+  const idx = a==null ? -1 : tiers.findIndex(t=>a >= Number(t.min_value) && a < Number(t.max_value));
+  return `<div class="ladder-steps">` + tiers.map((t,i)=>{
+    const lo = Number(t.min_value), hi = Number(t.max_value), now = i===idx, done = idx>i, next = i===idx+1;
+    const prog = now ? Math.min(100, hi>=10 ? 100 : (a-lo)/(hi-lo)*100) : (done ? 100 : 0);
+    const needNext = next && target ? Math.max(0, lo*target - perf) : null;
+    return `<div class="step ${now?'now':''} ${done?'done':''} ${next?'next':''}">` +
+      `<span class="rate">${pct(t.rate,0)}</span>` +
+      `<span class="range">${tiers.length===1 ? 'על כל המכירות' : `מ-${pct(lo,0)}${hi>=10?' ומעלה':` עד ${pct(hi,0)}`} מהיעד`}${target && tiers.length>1 ? ` · ${k(lo*target)}` : ''}</span>` +
+      `<span class="bar"><i style="--w:${prog.toFixed(1)}%"></i></span>` +
+      `<span class="tag">${now ? '😊 את כאן' : done ? '✓ עברת' : next ? `עוד ${k(needNext)} למדרגה הזו` : ''}</span></div>`;
+  }).join('') + `</div>`;
+}
+function drawMyLadder(me, rows){
+  const card = document.getElementById('myLadderCard'); if(!card) return;
+  const tiers = me ? tiersOfSet(me.bonus_tier_set) : [], target = me ? tgt(me) : null;
+  card.classList.toggle('hidden', !(me && !noBonus(me) && tiers.length && target));
+  if(!(me && !noBonus(me) && tiers.length && target)) return;
+  const perf = val(me), rate = rateAt(perf, target, tiers);
+  document.getElementById('myLadderNote').textContent = `${setTitle(me.bonus_tier_set)} · יעד ${k(target)} · ביצוע ${k(perf)}${rate!=null?` · עכשיו ${pct(rate,0)}`:''}`;
+  document.getElementById('myLadder').innerHTML = ladderSteps(tiers, perf, target) +
+    `<div class="sub" style="padding:6px 18px 12px">הבונוס = כל המכירות × אחוז המדרגה. ${tiers.length>1?'קפיצה למדרגה הבאה משדרגת את האחוז על הכול.':''} פירוט וסימולציה בטאב "בונוס".</div>`;
+}
+function drawLadder(me, tiers, perf, target, left, rate){
+  document.getElementById('ladderNote').textContent = `${setTitle(me.bonus_tier_set)} · ${tiers.length} מדרגות · יעד ${k(target)}`;
+  const host = document.getElementById('ladder'); host.insertAdjacentHTML('beforebegin', ''); 
+  const vis = document.getElementById('ladderVisual') || (()=>{ const d=document.createElement('div'); d.id='ladderVisual'; host.parentElement.insertBefore(d, host.parentElement.querySelector('.scroll')); return d; })();
+  vis.innerHTML = ladderSteps(tiers, perf, target);
+  document.querySelector('#ladder thead').innerHTML =
+    '<tr><th>מדרגה</th><th>מאחוז עמידה</th><th>ביצוע נדרש</th><th>עוד למכור</th><th>ליום</th><th>הבונוס במדרגה</th><th></th></tr>';
+  document.querySelector('#ladder tbody').innerHTML = tiers.map(t=>{
+    const need = Number(t.min_value)*target, gap = Math.max(0, need-perf), isNow = rate!=null && Number(t.rate)===rate && perf >= need && perf < Number(t.max_value)*target;
+    const at = Math.max(need, perf);
+    return `<tr class="${isNow?'me':''} ${gap?'':'muted'}" data-need="${gap.toFixed(0)}" data-total="${need.toFixed(0)}">` +
+      `<td><b>${pct(t.rate,0)}</b>${isNow?' <span class="chip lemon">😊 את כאן</span>':''}</td>` +
+      `<td class="num">${pct(t.min_value,0)}</td><td class="num">${k(need)}</td>` +
+      `<td class="num ${gap?'':'dash'}">${gap?k(gap):'הושג ✓'}</td>` +
+      `<td class="num ${gap&&left?'':'dash'}">${gap&&left?k(gap/left):'—'}</td>` +
+      `<td class="num"><b>${k(at*Number(t.rate))}</b></td>` +
+      `<td>${gap?'<button class="btn ghost xs" type="button">לדמות</button>':''}</td></tr>`;
+  }).join('');
+  document.querySelectorAll('#ladder tbody tr[data-need] button').forEach(b=>b.onclick=()=>{
+    document.getElementById('simSales').value = Math.round(Number(b.closest('tr').dataset.total));
+    simFromSales();
+  });
+}
+function simFromBonus(){
+  const me = ROWS.find(r=>r.is_me), tiers = myTiers(); if(!me || !tiers.length) return;
+  const out = document.getElementById('simBonusOut'), want = Number(document.getElementById('simBonus').value);
+  if(!want || want <= 0){ out.innerHTML = '<span class="dash">הקלידי סכום בונוס כדי לראות כמה צריך למכור.</span>'; return; }
+  const perf = val(me), target = tgt(me), left = Math.max(0, Number(me.workdays_in_month)-Number(me.workdays_elapsed));
+  const need = perfForBonus(want, target, tiers);
+  if(need == null){ out.innerHTML = `<div class="err">הסכום הזה מעל הסולם של החודש. הבונוס הגבוה ביותר האפשרי הוא בערך ${UI.bonusHtml(Number(tiers[tiers.length-1].max_value)*target*Number(tiers[tiers.length-1].rate))}.</div>`; return; }
+  const gap = Math.max(0, need-perf), r = rateAt(need, target, tiers);
+  out.innerHTML = gap === 0
+    ? `<div class="big-ok">🎉 כבר שם! הבונוס הנוכחי שלך (${UI.bonusHtml(perf*(rateAt(perf,target,tiers)||0))}) מכסה את זה.</div>`
+    : `<div class="kv"><span class="lbl">ביצוע שצריך להגיע אליו</span><span class="val">${k(need)}</span></div>` +
+      `<div class="kv"><span class="lbl">כלומר עוד למכור</span><span class="val accent">${k(gap)}</span></div>` +
+      `<div class="kv"><span class="lbl">ליום, ב-${UI.one(left)} ימי העבודה שנותרו</span><span class="val accent">${left?k(gap/left):'—'}</span></div>` +
+      `<div class="kv"><span class="lbl">המדרגה שתתקבל</span><span class="val">${pct(r,0)} · ${pct(need/target,0)} מהיעד</span></div>` +
+      // לפעמים הסכום המבוקש נופל בין מדרגות, והמדרגה הבאה נותנת יותר מהמבוקש —
+      // מציגים את הבונוס בפועל כדי שלא ייראה כאילו החישוב פספס.
+      `<div class="kv"><span class="lbl">הבונוס בפועל</span><span class="val accent">${UI.bonusHtml(need*r)}${need*r > want*1.02 ? ' <span class="sub">(יותר מהמבוקש — כך נופלת המדרגה)</span>' : ''}</span></div>`;
+}
+function simFromSales(){
+  const me = ROWS.find(r=>r.is_me), tiers = myTiers(); if(!me || !tiers.length) return;
+  const out = document.getElementById('simSalesOut'), now = Number(document.getElementById('simSales').value);
+  if(!now || now <= 0){ out.innerHTML = '<span class="dash">הקלידי סך מכירות לחודש כדי לראות את הבונוס.</span>'; return; }
+  const perf = val(me), target = tgt(me), left = Math.max(0, Number(me.workdays_in_month)-Number(me.workdays_elapsed));
+  const r = rateAt(now, target, tiers), b = r==null?0:now*r;
+  const curB = perf*(rateAt(perf, target, tiers)||0);
+  // הקלט הוא הסכום **הכולל** לסוף החודש, ולכן הפער מול מה שכבר נמכר הוא מה שנשאר.
+  const gap = Math.max(0, now-perf);
+  const next = tiers.find(t=>Number(t.min_value)*target > now);
+  out.innerHTML =
+    `<div class="kv"><span class="lbl">ביצוע כולל</span><span class="val">${k(now)} · ${pct(now/target,0)} מהיעד</span></div>` +
+    `<div class="kv"><span class="lbl">מכרת עד כה</span><span class="val">${k(perf)}</span></div>` +
+    (now < perf
+      ? `<div class="info" style="margin:6px 0">כבר מכרת ${k(perf)} — יותר מהסכום שהקלדת, אז זו סימולציה תיאורטית בלבד.</div>`
+      : `<div class="kv"><span class="lbl">נשאר למכור</span><span class="val accent">${gap?k(gap):'הגעת ✓'}</span></div>` +
+        (gap && left ? `<div class="kv"><span class="lbl">ליום, ב-${UI.one(left)} ימי העבודה שנותרו</span><span class="val accent">${k(gap/left)}</span></div>` : '')) +
+    `<div class="kv"><span class="lbl">מדרגה</span><span class="val">${r!=null?pct(r,0):'—'}</span></div>` +
+    `<div class="kv"><span class="lbl">בונוס</span><span class="val accent">${UI.bonusHtml(b)}</span></div>` +
+    `<div class="kv"><span class="lbl">תוספת מול הבונוס הנוכחי</span><span class="val ${b>curB?'pos':''}">${b>curB?'+':''}${k(b-curB)}</span></div>` +
+    (next ? `<div class="info" style="margin-top:8px">עוד ${k(Number(next.min_value)*target - now)} ותעברי למדרגה של ${pct(next.rate,0)} — ואז הבונוס יהיה ${UI.bonusHtml(Number(next.min_value)*target*Number(next.rate))}. 💪</div>` : '');
+}
+
+// ============================================================ המכירות שלי
+// עסקה "גדולה" נמדדת מול הממוצע של אותה עובדת באותו חודש — כך גם מי שמוכרת
+// בסכומים קטנים מקבלת פרגון על החריגה שלה, ולא רק מי שמוכרת ביוקר.
+function saleBadge(amount, avg, maxAmount){
+  if(!amount) return '';
+  if(amount === maxAmount && amount >= avg * 1.2) return '<span class="chip lemon">🏆 העסקה הגדולה שלך החודש!</span>';
+  if(amount >= avg * 2)   return '<span class="chip lemon">🎉 פי ' + (amount/avg).toFixed(1) + ' מהממוצע שלך — מעולה!</span>';
+  if(amount >= avg * 1.5) return '<span class="chip mint">👏 הרבה מעל הממוצע שלך</span>';
+  if(amount >= avg * 1.2) return '<span class="chip mint">💪 מעל הממוצע שלך</span>';
+  return '';
+}
+async function renderMine(){
+  const label = UI.label();
+  if(!label) return;
+  const prev = UI.prevMonth(MONTH);
+  const list = document.getElementById('mineList'), open = document.getElementById('openList');
+  list.innerHTML = '<div class="load">טוען…</div>'; open.innerHTML = '';
+  let rows, prevRows;
+  try{
+    [rows, prevRows] = await Promise.all([
+      rest(`center_my_sales?period_month=eq.${MONTH}&display_name=eq.${encodeURIComponent(label)}&order=creation_date.desc&limit=2000`),
+      rest(`center_my_sales?period_month=eq.${prev}&display_name=eq.${encodeURIComponent(label)}&order=creation_date.desc&limit=2000`),
+    ]);
+  }catch(e){ list.innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+
+  // תוכנית נספרת בביצוע רק כשהיא שולמה לפי הכלל האישי. כל שאר המספרים בדף
+  // נגזרים מזה, אחרת "סה\u05f4כ מכירות" מציג שווי תוכניות שעדיין לא נכנס כסף עליהן.
+  const counted = rows.filter(r=>r.in_performance);
+  const amounts = counted.map(r=>Number(r.total_after_discount||0)).filter(v=>v>0);
+  const avg = amounts.length ? amounts.reduce((a,b)=>a+b,0)/amounts.length : 0;
+  const maxAmount = amounts.length ? Math.max(...amounts) : 0;
+  const perf = counted.reduce((a,r)=>a+Number(r.total_after_discount||0),0);
+  const openRowsNow = rows.filter(r=>!r.in_performance);
+  const partial = openRowsNow.filter(isPartial);
+  const rule = rows.find(r=>r.perf_min_pay_pct!=null || r.perf_min_paid!=null) || {};
+  const ruleTxt = (rule.perf_min_pay_pct!=null || rule.perf_min_paid!=null)
+    ? `תוכנית נספרת רק כששולמו עליה ${rule.perf_min_pay_pct!=null?`יותר מ-${pct(rule.perf_min_pay_pct,0)}`:''}` +
+      `${rule.perf_min_pay_pct!=null && rule.perf_min_paid!=null?' וגם ':''}` +
+      `${rule.perf_min_paid!=null?`יותר מ-${k(rule.perf_min_paid)}`:''}.`
+    : 'תוכנית נספרת לפי הכלל שהוגדר לך בהגדרות המחלקה.';
+
+  document.getElementById('mineTiles').innerHTML = [
+    ['הביצוע שלי החודש', `<span class="${perfCls(perf)}">${k(perf)}</span>`, `${counted.length} תוכניות ששולמו · זה המספר שנספר לך`],
+    ['שולם בפועל', k(rows.reduce((a,r)=>a+Number(r.paid||0),0)), 'כל התקבולים על התוכניות שלי'],
+    ['ממתין לתשלום', k(openRowsNow.reduce((a,r)=>a+Number(r.total_after_discount||0),0)),
+      `${openRowsNow.length} תוכניות · ${partial.length} מהן שולמו חלקית`],
+    ['ממוצע לעסקה שנספרה', k(avg), maxAmount?`הגדולה ביותר ${k(maxAmount)}`:''],
+  ].map(([kk,v,m])=>`<div class="tile"><div class="k">${kk}</div><div class="v small">${v}</div><div class="m">${m||''}</div></div>`).join('');
+  document.getElementById('mineNote').textContent = `${UI.heb(MONTH)} · ${rows.length} תוכניות, ${counted.length} נספרו`;
+  document.getElementById('mineRule').innerHTML =
+    `<b>איך נספרת מכירה:</b> ${esc(ruleTxt)} תוכנית שנפתחה ועדיין לא שולמה איננה נספרת בביצוע ואיננה מזכה בבונוס — ` +
+    `היא מופיעה כאן כ<b>ממתינה לתשלום</b>, ובכרטיס שמתחת.`;
+
+  list.innerHTML = UI.dayGroups(rows, 'creation_date', dr =>
+    `<div class="scroll"><table><thead><tr><th>לקוחה</th><th>תוכנית</th><th>סכום</th><th>שולם</th><th>%</th><th>מצב</th><th></th></tr></thead><tbody>` +
+    dr.map(r=>{ const amt = Number(r.total_after_discount||0), paid = Number(r.paid||0);
+      const cls = r.in_performance ? '' : (paid>0 ? 'rowband' : 'muted');
+      return `<tr class="${cls}"><td>${esc(r.client_name||'—')}</td><td title="${esc(r.plan_name||'')}">${planText(r)}</td>` +
+        `<td class="num"><b>${k(amt)}</b></td><td class="num">${k(paid)}</td><td class="num">${r.pay_pct==null?'—':pct(r.pay_pct,0)}</td>` +
+        `<td>${statusChip(r)}</td>` +
+        `<td style="white-space:normal">${r.in_performance ? saleBadge(amt, avg, maxAmount) : ''}</td></tr>`; }).join('') +
+    `</tbody></table></div>`,
+    { open:'first', empty:'עדיין אין תוכניות בחודש הזה',
+      summary:(d,dr)=>{ const c = dr.filter(x=>x.in_performance);
+        return `${dr.length} תוכניות · נספרו ${c.length} · ${k(c.reduce((a,r)=>a+Number(r.total_after_discount||0),0))}` +
+          (c.some(r=>Number(r.total_after_discount) >= avg*1.5) ? ' · 🎉 יום חזק' : ''); } });
+
+  // ממתינות לתשלום — קודם מה ששולם חלקית, כי שם הכסף הכי קרוב
+  const waiting = [[MONTH, openRowsNow], [prev, prevRows.filter(r=>!r.in_performance)]];
+  const waitTotal = waiting.reduce((a,[,rs])=>a+rs.reduce((x,r)=>x+Number(r.total_after_discount||0),0),0);
+  const partialAll = waiting.reduce((a,[,rs])=>a+rs.filter(isPartial).length,0);
+  document.getElementById('openNote').textContent =
+    `${waiting[0][1].length + waiting[1][1].length} תוכניות · ${k(waitTotal)} ממתין · ${partialAll} שולמו חלקית`;
+  open.innerHTML = waiting.map(([m, rs]) => {
+    const sorted = rs.slice().sort((a,b)=>(Number(b.paid)>0)-(Number(a.paid)>0) || Number(b.total_after_discount)-Number(a.total_after_discount));
+    return `<details class="daygroup" ${m===MONTH?'open':''}><summary><span>${esc(UI.heb(m))}</span>` +
+      `<span class="cnt">${rs.length} ממתינות · ${k(rs.reduce((a,r)=>a+Number(r.total_after_discount||0),0))}` +
+      `${rs.some(isPartial)?` · ⚠ ${rs.filter(isPartial).length} שולמו חלקית`:''}</span></summary><div class="rows">` +
+      (sorted.length ? `<div class="scroll"><table><thead><tr><th>תאריך</th><th>לקוחה</th><th>תוכנית</th><th>סכום</th><th>שולם עד כה</th><th>%</th><th>חסר לתשלום</th><th>מצב</th></tr></thead><tbody>` +
+        sorted.map(r=>{ const amt=Number(r.total_after_discount||0), paid=Number(r.paid||0);
+          return `<tr class="${paid>0?'rowband':''}"><td>${UI.dm(r.creation_date)}</td><td>${esc(r.client_name||'—')}</td><td title="${esc(r.plan_name||'')}">${planText(r)}</td>` +
+          `<td class="num"><b>${k(amt)}</b></td><td class="num ${paid>0?'pos':'dash'}">${k(paid)}</td><td class="num">${r.pay_pct==null?'—':pct(r.pay_pct,0)}</td>` +
+          `<td class="num accent">${k(Math.max(0, amt-paid))}</td><td>${statusChip(r)}</td></tr>`; }).join('') +
+        `</tbody></table></div>` : '<div class="empty">אין תוכניות ממתינות — הכול שולם 👏</div>') +
+      `</div></details>`; }).join('');
+}
+// מה באמת נמכר: "גוף מלא - 10 טיפולים" ולא "מרכז אילה ברלין - תכנית טיפולים 3",
+// שהוא רק שם הטופס. אם התוכן עדיין לא נמשך מרפיד — נופלים חזרה לשם הגנרי.
+function planText(r){
+  const c = (r.plan_contents||'').trim();
+  return (c ? esc(c) : `<span class="dash">${esc(r.plan_name||'')}</span>`) +
+         (r.plan_type ? ` <span class="sub">${esc(r.plan_type)}</span>` : '');
+}
+
+// מצב התוכנית בשלוש מילים. "שולם חלקית" בולט בכוונה — שם נמצא הכסף שאפשר לסגור.
+function statusChip(r){
+  if(r.in_performance) return '<span class="chip good">✓ נספרה</span>';
+  const paid = Number(r.paid||0);
+  if(paid <= 0) return '<span class="chip">טרם שולם</span>';
+  if(isPartial(r)) return `<span class="chip warn">⚠ שולם חלקית — ${pct(r.pay_pct,0)}</span>`;
+  if(/מימון|עמל/.test(r.plan_type||'') || /מימון|עמל/.test(r.plan_name||'')) return '<span class="chip">שולם · מימון — לא נספר</span>';
+  return '<span class="chip">שולם · לא נספר (מתחת לסף)</span>';
+}
+// "חלקית" = שולם משהו אבל פחות מהתוכנית (עד 5% סטייה זה תשלום מלא)
+function isPartial(r){
+  const paid = Number(r.paid||0), amt = Number(r.total_after_discount||0);
+  return paid > 0 && amt > 0 && paid < amt * 0.95;
+}
+
+// ============================================================ מגמה של חצי שנה
+// רגרסיה לינארית על שישה החודשים האחרונים שיש בהם נתון. מחזיר גם את הערכים
+// המותאמים (לציור הקו) וגם את מה שצריך כדי לכתוב את זה במילים.
+function trendOf(values, skipIdx){
+  const idx = values.map((v,i)=>[i,v]).filter(([i,v])=>v!=null && isFinite(Number(v)) && i!==skipIdx).map(([i])=>i);
+  if(idx.length < 3) return null;
+  const win = idx.slice(-6), n = win.length;
+  const ys = win.map(i=>Number(values[i]));
+  const mx = (n-1)/2, my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  ys.forEach((yv,kk)=>{ num += (kk-mx)*(yv-my); den += (kk-mx)**2; });
+  const slope = den ? num/den : 0, intercept = my - slope*mx;
+  const fitted = values.map(()=>null);
+  win.forEach((i,kk)=>{ fitted[i] = intercept + slope*kk; });
+  const bestK = ys.indexOf(Math.max(...ys)), worstK = ys.indexOf(Math.min(...ys));
+  return { win, n, slope, mean:my, fitted, ys, skipIdx,
+           pct: my ? slope/my : null,                    // שינוי ממוצע לחודש, יחסית לממוצע התקופה
+           next: intercept + slope*n,                    // הקצב הנוכחי, חודש קדימה
+           bestI: win[bestK], worstI: win[worstK], best: ys[bestK], worst: ys[worstK],
+           last: ys[n-1] };
+}
+
+// הניסוח: קודם המדידה, אחר כך הערה של מנהל מכירות — תמיד כזו שמרימה ומציעה צעד.
+function trendNote(tr, months, metric, fmt, who, openIdx){
+  if(!tr) return `<div class="info">כדי לראות קו מגמה והערת מנהל — לבחור ב"מי" אדם אחד או את כל המחלקה. ${q('trend6')}</div>`;
+  const name = who==='__all' ? 'המחלקה' : who;
+  const heb = i => UI.heb(months[i]);
+  const p = tr.pct;
+  const dir = p > 0.02 ? 'עלייה' : p < -0.02 ? 'ירידה' : 'יציבות';
+  const amount = metric==='attainment'
+    ? `${(tr.slope*100>=0?'+':'')}${(tr.slope*100).toFixed(1)} נקודות אחוז לחודש`
+    : `${(p*100>=0?'+':'')}${(p*100).toFixed(1)}% לחודש`;
+  const gapToBest = tr.best - tr.last;
+  const measure = `<div class="info"><b>${esc(name)} · ${tr.n} החודשים האחרונים:</b> ${dir} בקצב ממוצע של <b>${amount}</b> ${q('trend6')} · ` +
+    `החודש החזק ${heb(tr.bestI)} (${fmt(tr.best)}) · החלש ${heb(tr.worstI)} (${fmt(tr.worst)}) · ` +
+    (openIdx >= 0 && tr.win[tr.n-1] === openIdx - 1
+       ? `בקצב הזה ${UI.heb(months[openIdx])} נוחת סביב <b>${fmt(Math.max(0,tr.next))}</b>.`
+       : `בקצב הזה החודש הבא נוחת סביב <b>${fmt(Math.max(0,tr.next))}</b>.`) +
+    (openIdx >= 0 ? ` <span class="sub">${UI.heb(months[openIdx])} עדיין פתוח ולכן אינו נכנס לחישוב המגמה.</span>` : '') + `</div>`;
+  let note;
+  if(p >= 0.08)
+    note = `מגמה כזו לא קורית במקרה. ${esc(name)} מוסיפה בממוצע ${amount} כבר ${tr.n} חודשים, והשיא ב-${heb(tr.bestI)} הוא הרף האמיתי — לא חריגה. ` +
+           `שווה לשבת איתה עשר דקות ולשאול מה היא עושה אחרת, ולהפוך את זה לנוהל של כל הצוות. השימור של הקצב חשוב עכשיו יותר מהעלאת היעד.`;
+  else if(p >= 0.02)
+    note = `כיוון נכון ויציב. הפער בין החודש החזק (${fmt(tr.best)}) לחודש האחרון הוא ${fmt(Math.abs(gapToBest))}, כלומר אין כאן צורך במהפכה — ` +
+           `רק לחזור על מה שעבד ב-${heb(tr.bestI)}. שאלה אחת טובה לשיחה: מה היה שונה באותו חודש?`;
+  else if(p > -0.02)
+    note = `יציבות היא בסיס טוב, אבל היא גם אומרת שאין כרגע מנוע צמיחה. היעד הכי פשוט הוא לחזור לרמה של ${heb(tr.bestI)} (${fmt(tr.best)}) — ` +
+           `זה כבר הושג פעם, כלומר זה בהישג יד. הפער הנדרש: ${fmt(Math.abs(gapToBest))}.`;
+  else
+    note = `לפני שמדברים על ירידה — ${heb(tr.bestI)} מוכיח ש${esc(name)} יודעת לעשות ${fmt(tr.best)}. זו לא שאלה של יכולת אלא של מה השתנה מאז. ` +
+           `שיחה אחת על ${heb(tr.bestI)} מול היום שווה יותר מכל יעד חדש. הצעה ליעד ביניים — ${fmt(Math.max(tr.mean, tr.last))}: חזרה לממוצע התקופה, לא לשיא.`;
+  return measure + `<div class="info mgr">👔 <b>הערת מנהל מכירות</b> — ${note}</div>`;
+}
+
+// ============================================================ השוואה שנתית
+async function renderAnnual(){
+  if(!ANN_ROWS){ [ANN_ROWS, WEEK] = await Promise.all([rest('front_center?order=period_month&limit=5000'), rest('center_weekly?order=week_start&limit=5000')]); }
+  const rows = ANN_ROWS.filter(r=>r.department!=='managers' && (DEPT==='all' || r.department===DEPT));
+  const who = document.getElementById('annWho'), metric = document.getElementById('annMetric');
+  const names = [...new Set(rows.map(r=>r.display_name))];
+  const meName = UI.label();
+  // חבר/ת צוות רואה גרפים של עצמו/ה בלבד — הבורר נעול, ואין דרך להגיע
+  // דרכו לנתונים של עובדת אחרת.
+  const lockMe = UI.isStaff() && meName;
+  // רשימת "מי" נבנית מחדש כשמחליפים מחלקה — אחרת הגרף נשאר על המחלקה הקודמת
+  if(who.dataset.dept !== String(DEPT)){
+    const keep = who.value;
+    who.innerHTML = lockMe
+      ? `<option value="${esc(meName)}" selected>${esc(meName)}</option>`
+      : `<option value="__top">5 המובילות</option><option value="__all">כל המחלקה (סה"כ)</option>` +
+        names.map(n=>`<option value="${esc(n)}"${n===meName?' selected':''}>${esc(n)}</option>`).join('');
+    if(lockMe){ who.disabled = true; who.title = 'הגרפים מציגים את הנתונים שלך בלבד'; }
+    if(keep && [...who.options].some(o=>o.value===keep)) who.value = keep;
+    who.dataset.dept = String(DEPT); who.onchange = drawAnnual; metric.onchange = drawAnnual;
+  }
+  drawAnnual();
+}
+function drawAnnual(){
+  const rows = ANN_ROWS.filter(r=>r.department!=='managers' && (DEPT==='all' || r.department===DEPT));
+  const meLbl = UI.label(), lockMe = UI.isStaff() && meLbl;
+  const who = lockMe ? meLbl : document.getElementById('annWho').value;
+  const metric = document.getElementById('annMetric').value;
+  const months = [...new Set(rows.map(r=>r.period_month))].sort();
+  const get = r => metric==='performance' ? val(r) : metric==='attainment' ? (r.attainment==null?null:Number(r.attainment)) : Number(r[metric]||0);
+  const fmt = metric==='attainment' ? v=>pct(v,0) : metric==='performance' ? k : UI.int;
+  let names;
+  if(who==='__top'){ const tot = {}; rows.forEach(r=>{ tot[r.display_name]=(tot[r.display_name]||0)+val(r); }); names = Object.entries(tot).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]); }
+  else if(who==='__all'){ names = ['__all']; }
+  else names = [who];
+  const series = names.map((n,i)=>({ name: n==='__all'?'סה"כ':n, values: months.map(m=>{
+    const rs = rows.filter(r=>r.period_month===m && (n==='__all' || r.display_name===n));
+    if(!rs.length) return null;
+    if(metric==='attainment'){ const t=rs.reduce((s,r)=>s+(tgt(r)||0),0); return t? rs.reduce((s,r)=>s+val(r),0)/t : null; }
+    return rs.reduce((s,r)=>s+(get(r)||0),0); }) }));
+  // קו מגמה של חצי השנה האחרונה — רק כשמסתכלים על אדם אחד (או על המחלקה כולה);
+  // עם חמש סדרות במקביל קו נוסף הוא רעש ולא מידע.
+  // החודש הנוכחי עדיין פתוח (חלק מהחודש), ולכן הוא אינו נכנס לחישוב המגמה —
+  // אחרת כל חודש ייראה כירידה חדה רק בגלל שהוא נמדד באמצע.
+  const openIdx = months.indexOf(UI.thisMonth());
+  const tr = series.length === 1 ? trendOf(series[0].values, openIdx) : null;
+  const plot = tr ? series.concat([{ name:'קו מגמה — 6 חודשים', values: tr.fitted, color:'var(--ink-soft)', dashed:true, noDots:true, noValues:true }]) : series;
+  UI.chart.lines('#annChart', { labels: months.map(UI.shortMonth), series: plot, fmt, yfmt: metric==='attainment'?v=>pct(v,0):v=>UI.k(v,{plain:true}), title:'לפי חודשים', showValues: series.length === 1 });   // עם חמש סדרות המספרים נדחסים
+  document.getElementById('annTrend').innerHTML = trendNote(tr, months, metric, fmt, who, openIdx);
+
+  const wrows = (WEEK||[]).filter(r=>(DEPT==='all' || r.department===DEPT) && (who==='__all' || who==='__top' ? names.includes(r.display_name) || who==='__all' : r.display_name===who));
+  const weeks = [...new Set(wrows.map(r=>r.week_start))].sort();
+  const wseries = (who==='__all' ? ['__all'] : names).map(n=>({ name: n==='__all'?'סה"כ':n, values: weeks.map(w=>{ const rs = wrows.filter(r=>r.week_start===w && (n==='__all'||r.display_name===n)); return rs.length? rs.reduce((s,r)=>s+Number(r.performance||0),0) : null; }) }));
+  UI.chart.lines('#weekChart', { labels: weeks.map(UI.weekRange), series: wseries, fmt: k, title:'לפי שבועות', showValues: wseries.length === 1 && weeks.length <= 16 });
+
+  // meName הוגדר ב-renderAnnual בלבד; בלי ההגדרה כאן ה-map למטה זרק ReferenceError,
+  // הגוף של הטבלה נשאר ריק ונראה כמו באג בנתונים (תוקן 18/09/2026).
+  const meName = UI.label();
+  const cols=[...months];   // מימין לשמאל: החודש הראשון מימין
+  document.querySelector('#annGrid thead').innerHTML = `<tr><th>מי</th>${cols.map(m=>`<th class="${m===MONTH?'selmonth':''}">${UI.heb(m)}</th>`).join('')}<th>סה"כ</th></tr>`;
+  const tableNames = lockMe ? [meLbl] : [...new Set(rows.map(r=>r.display_name))];
+  document.querySelector('#annGrid tbody').innerHTML = tableNames.map(n=>{
+    let sum=0, seen=0;
+    const tds = cols.map(m=>{ const r=rows.find(x=>x.period_month===m && x.display_name===n); if(!r) return '<td class="dash">—</td>'; const v=get(r); if(v==null) return '<td class="dash">—</td>'; sum+=v; seen++; return `<td class="num ${m===MONTH?'selmonth':''}">${fmt(v)}</td>`; }).join('');
+    return `<tr class="${n===meName?'me':''}"><td>${esc(n)}</td>${tds}<td class="num" style="font-weight:800">${metric==='attainment'?(seen?pct(sum/seen,0)+' <span class="dash">(ממוצע)</span>':'—'):fmt(sum)}</td></tr>`;
+  }).join('') || '<tr><td class="dash">אין נתונים</td></tr>';
+}
+
+// ============================================================ הגדרות (סופר אדמין)
+async function renderSetup(){
+  if(!UI.canWrite()) return;
+  const sets = [...new Set(TIERS.map(t=>t.tier_set))];
+  document.querySelector('#tiersGrid thead').innerHTML = '<tr><th>סט</th><th>מ-%</th><th>עד %</th><th>אחוז בונוס</th></tr>';
+  const setCell = s => `${esc(setTitle(s))} <span class="sub">${esc(s)}</span>`;
+  document.querySelector('#tiersGrid tbody').innerHTML = sets.map(s=>TIERS.filter(t=>t.tier_set===s).map((t,i)=>`<tr>${i===0?`<td rowspan="${TIERS.filter(x=>x.tier_set===s).length}">${setCell(s)}</td>`:''}<td class="num">${pct(t.min_value,0)}</td><td class="num">${Number(t.max_value)>=10?'∞':pct(t.max_value,0)}</td><td class="num">${pct(t.rate,0)}</td></tr>`).join('')).join('') || '<tr><td class="dash" colspan="4">אין מדרגות לחודש</td></tr>';
+}
+
+['simBonus','simSales'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', UI.debounce(id==='simBonus' ? simFromBonus : simFromSales, 200));
+});
+document.addEventListener('access-ready', () => {
+  UI.applyVisibility();
+  // הטאב האישי נפתח רק למי שיש לו/ה שורה אישית בדוח (כולל תצוגה מקדימה כעובד/ת)
+  const btn = document.querySelector('#tabs button[data-tab="mine"]');
+  if(btn) btn.classList.toggle('hidden', !UI.label());
+  const bbtn = document.querySelector('#tabs button[data-tab="bonus"]');
+  if(bbtn) bbtn.classList.toggle('hidden', !UI.label());
+  // מי שאין לו/ה מודל בונוס (מת"ל / אקטיב) לא רואה את טאב הבונוס
+  document.addEventListener('center-rows', () => { const me = ROWS.find(r=>r.is_me); if(bbtn) bbtn.classList.toggle('hidden', !UI.label() || noBonus(me)); });
+});
+init().catch(e=>{ document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<div class="card"><div class="err">טעינה נכשלה: ${esc(e.message)}</div></div>`); });
+</script>
+</body>
+</html>
