@@ -1492,6 +1492,7 @@ th.sortable:hover{ background:var(--panel2); }
   --hero-grad:var(--g-brand);
   --header-grad:rgba(255,255,255,.86);
   --side-w:236px;
+  --side-rail-w:62px;
   --font-num:"Rubik","Heebo","Assistant","Segoe UI",Arial,sans-serif;
   --easing:cubic-bezier(.2,.75,.2,1);
   --ico-target-w:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4'/%3E%3C/svg%3E");
@@ -1570,7 +1571,11 @@ body::after{ width:520px; height:520px; bottom:-200px; inset-inline-start:-140px
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent); animation:sheen 5s ease-in-out 1.5s infinite; }
 .side-brand .brand{ display:block; width:128px; height:18px; background-color:#fff; }
 .side-name{ font-size:10.5px; letter-spacing:.14em; font-weight:700; opacity:.9; }
-.side-close{ display:none; position:absolute; top:12px; inset-inline-end:10px; width:30px; height:30px; border-radius:9px; border:0; background:rgba(255,255,255,.22); color:#fff; cursor:pointer; place-items:center; }
+.side-collapse{ display:grid; position:absolute; top:12px; inset-inline-end:10px; width:30px; height:30px; border-radius:9px; border:0;
+  background:rgba(255,255,255,.22); color:#fff; cursor:pointer; place-items:center; transition:background .25s, transform .25s var(--easing); }
+.side-collapse:hover{ background:rgba(255,255,255,.34); transform:scale(1.08); }
+.side-collapse .ico{ width:16px; height:16px; }
+.side-collapse .cl{ display:none; }
 .side-nav{ flex:1; overflow:auto; padding:10px 0 12px; display:flex; flex-direction:column; scrollbar-width:thin; }
 .side-link{
   display:flex; align-items:center; gap:11px; padding:8px 16px; color:var(--ink-soft); text-decoration:none; font-size:13.5px; font-weight:600;
@@ -1627,7 +1632,42 @@ body.side-hidden.has-side header,
 body.side-hidden.has-side .wrap,
 body.side-hidden.has-side .previewbar{ margin-inline-start:14px; }
 body.side-hidden.has-side header > .brand{ display:block; }
-.sidebar .side-close{ display:grid; }
+
+/* --- מצב מסילה: רק אייקונים, והכותרת מופיעה בריחוף --- */
+body.side-rail:not(.side-open) .sidebar{ width:var(--side-rail-w); }
+body.side-rail:not(.side-open).has-side header,
+body.side-rail:not(.side-open).has-side .wrap,
+body.side-rail:not(.side-open).has-side .previewbar{ margin-inline-start:calc(var(--side-rail-w) + 24px); }
+body.side-rail:not(.side-open) .side-brand{ padding:12px 6px; align-items:center; gap:0; }
+body.side-rail:not(.side-open) .side-brand .brand,
+body.side-rail:not(.side-open) .side-name,
+body.side-rail:not(.side-open) .side-lbl,
+body.side-rail:not(.side-open) .side-user .who,
+body.side-rail:not(.side-open) .side-user .lvl,
+body.side-rail:not(.side-open) .side-out span{ display:none; }
+body.side-rail:not(.side-open) .side-collapse{ position:static; margin:0 auto; }
+body.side-rail:not(.side-open) .side-nav{ padding:8px 0; }
+body.side-rail:not(.side-open) .side-link{ justify-content:center; gap:0; padding:6px 0; border-inline-start-width:0; }
+body.side-rail:not(.side-open) .side-link:hover{ padding-inline-start:0; }
+body.side-rail:not(.side-open) .side-link.active{ background:transparent; }
+body.side-rail:not(.side-open) .side-link.active .side-ico{ box-shadow:0 6px 16px -6px rgba(246,49,127,.8); }
+body.side-rail:not(.side-open) .side-foot{ padding:10px 6px 12px; align-items:center; gap:8px; }
+body.side-rail:not(.side-open) .side-user{ justify-content:center; }
+body.side-rail:not(.side-open) .side-actions{ flex-direction:column; gap:8px; }
+body.side-rail:not(.side-open) .theme-toggle{ width:34px; height:34px; border-radius:10px; padding:0; justify-content:center; }
+body.side-rail:not(.side-open) .theme-toggle .knob{ display:none; }
+body.side-rail:not(.side-open) .theme-toggle[aria-checked="true"] .sun{ display:none; }
+body.side-rail:not(.side-open) .theme-toggle[aria-checked="false"] .moon{ display:none; }
+body.side-rail:not(.side-open) .side-out{ margin:0; padding:7px 9px; }
+body.side-rail:not(.side-open) .side-collapse .cr{ display:none; }
+body.side-rail:not(.side-open) .side-collapse .cl{ display:block; }
+.sidebar{ transition:width .3s var(--easing); }
+.side-tip{
+  position:fixed; z-index:60; pointer-events:none; white-space:nowrap; opacity:0; transform:translateX(6px);
+  background:var(--txt); color:var(--panel); font-size:12px; font-weight:700; padding:5px 10px; border-radius:9px;
+  box-shadow:var(--shadow-lift); transition:opacity .16s, transform .16s var(--easing);
+}
+.side-tip.on{ opacity:1; transform:none; }
 
 body.has-side header{
   position:sticky; top:12px; margin:14px 14px 0; margin-inline-start:calc(var(--side-w) + 28px); border-radius:14px; border:0;
@@ -1823,20 +1863,22 @@ tr.total td{ background:linear-gradient(90deg, color-mix(in srgb, var(--pink) 8%
 
 /* --- רספונסיביות: סרגל צד כמגירה --- */
 @media (max-width:1100px){
-  .sidebar{ top:0; bottom:0; inset-inline-start:0; border-radius:0 18px 18px 0; transform:translateX(110%); transition:transform .38s var(--easing); animation:none; width:min(var(--side-w), 84vw); }
-  body.side-open .sidebar{ transform:none; }
+  /* הסרגל נשאר גלוי כמסילת אייקונים ודוחף את התוכן, במקום לכסות אותו */
+  .sidebar{ top:0; bottom:0; inset-inline-start:0; border-radius:0 18px 18px 0; transform:none; animation:none; width:var(--side-rail-w); }
+  body.side-open .sidebar{ width:min(var(--side-w), 84vw); z-index:41; }
   body.side-open .side-bg{ opacity:1; pointer-events:auto; }
   body.side-open{ overflow:hidden; }
-  .side-close{ display:grid; }
   .menubtn{ display:grid; }
-  body.has-side header{ margin-inline-start:14px; }
-  body.has-side .wrap{ margin-inline-start:14px; }
-  body.has-side .previewbar{ margin-inline-start:14px; }
+  body.has-side header,
+  body.has-side .wrap,
+  body.has-side .previewbar{ margin-inline-start:calc(var(--side-rail-w) + 12px); }
 }
 @media (max-width:760px){
-  body.has-side header{ margin:8px 8px 0; top:6px; border-radius:12px; padding:8px 12px; }
-  body.has-side .wrap{ margin-inline:8px; padding-top:12px; }
-  body.has-side .previewbar{ margin:8px 8px 0; }
+  :root{ --side-rail-w:54px; }
+  /* המרווח מצד הסרגל נשמר, אחרת המסילה יושבת על התוכן */
+  body.has-side header{ margin:8px 8px 0; margin-inline-start:calc(var(--side-rail-w) + 8px); top:6px; border-radius:12px; padding:8px 12px; }
+  body.has-side .wrap{ margin-inline:8px; margin-inline-start:calc(var(--side-rail-w) + 8px); padding-top:12px; }
+  body.has-side .previewbar{ margin:8px 8px 0; margin-inline-start:calc(var(--side-rail-w) + 8px); }
   header h1::before{ width:26px; height:26px; background-size:13px; }
   .navwho .navname{ display:none; }
   .tile{ min-height:118px; }

@@ -68,6 +68,8 @@ const ICONS = {
   bell:        'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
   sparkles:    'M12 3l1.9 5.6 5.6 1.9-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9zM19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8z',
   x:           'M18 6 6 18M6 6l12 12',
+  chevR:       'M9 18l6-6-6-6',
+  chevL:       'M15 18l-6-6 6-6',
 };
 const ico = (name, cls) => `<svg class="ico ${cls || ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 function injectSprite() {
@@ -117,31 +119,79 @@ function renderSidebar(a) {
   aside.className = 'sidebar'; aside.id = 'sidebar';
   aside.innerHTML =
     `<div class="side-brand"><a class="brand" href="${esc(a.landing || 'index.html')}" aria-label="אילה ברלין — Pro Cosmetics"></a>` +
-      `<span class="side-name">מעקב המכירות</span><button class="side-close" type="button" aria-label="סגירה">${ico('x')}</button></div>` +
+      `<span class="side-name">מעקב המכירות</span>` +
+      `<button class="side-collapse" type="button" aria-label="צמצום התפריט" aria-expanded="true" title="צמצום התפריט">${ico('chevR', 'cr')}${ico('chevL', 'cl')}</button></div>` +
     `<nav class="side-nav" aria-label="דוחות">` +
-      pages.map((p, i) => `<a class="side-link${p.page === page ? ' active' : ''}" href="${esc(withBuild(p.page))}" style="--i:${i}">` +
-        `<span class="side-ico">${ico(PAGE_ICON[p.page] || 'home')}</span><span>${esc(pageTitle(p, a))}</span></a>`).join('') +
+      pages.map((p, i) => `<a class="side-link${p.page === page ? ' active' : ''}" href="${esc(withBuild(p.page))}" style="--i:${i}" data-title="${esc(pageTitle(p, a))}">` +
+        `<span class="side-ico">${ico(PAGE_ICON[p.page] || 'home')}</span><span class="side-lbl">${esc(pageTitle(p, a))}</span></a>`).join('') +
     `</nav>` +
     `<div class="side-foot">` +
       `<div class="side-user" title="${esc(a.email)}"><span class="avatar">${esc(initials(a.display_name || a.email))}</span>` +
         `<span class="who">${esc(a.display_name || a.email)}<em>${esc(a.impersonating ? 'בתצוגה כ' + a.role_title : a.role_title)}</em></span>` +
         `<span class="lvl">${esc(lvl)}</span></div>` +
-      `<div class="side-actions">${themeButton()}<button class="side-out" type="button">${ico('logout')}<span>יציאה</span></button></div>` +
+      `<div class="side-actions">${themeButton()}<button class="side-out" type="button" data-title="יציאה">${ico('logout')}<span>יציאה</span></button></div>` +
     `</div>`;
   const bg = document.createElement('div'); bg.className = 'side-bg';
   document.body.appendChild(aside); document.body.appendChild(bg);
   document.body.classList.add('has-side');
-  try { if (localStorage.getItem('dash.side') === 'hidden') document.body.classList.add('side-hidden'); } catch (_) {}
-  const close = () => document.body.classList.remove('side-open');
+  document.body.classList.remove('side-hidden');
+  syncSide();
+  const close = () => { document.body.classList.remove('side-open'); hideTip(); };
   bg.addEventListener('click', close);
-  aside.querySelector('.side-close').addEventListener('click', () => {
-    if (window.matchMedia('(max-width:1100px)').matches) { close(); return; }
-    document.body.classList.add('side-hidden');
-    try { localStorage.setItem('dash.side', 'hidden'); } catch (_) {}
+  aside.querySelector('.side-collapse').addEventListener('click', () => {
+    hideTip();
+    // במסך צר הסרגל תמיד גלוי כמסילה, והכפתור פותח וסוגר את המגירה הרחבה
+    if (narrow()) { document.body.classList.toggle('side-open'); return; }
+    setRail(!document.body.classList.contains('side-rail'), true);
   });
   aside.querySelector('.side-out').addEventListener('click', () => A.signOut());
   aside.querySelectorAll('.side-link').forEach(l => l.addEventListener('click', close));
+  bindRailTips(aside);
   bindTheme(aside);
+}
+
+// --- מצב מסילה: רק אייקונים, והכותרת מופיעה בריחוף --------------------------------
+// אין יותר כפתור "סגירה" — הסרגל מצטמצם פנימה ונשאר נגיש. במסך צר הוא תמיד
+// מסילה, כדי שלא יכסה את התוכן (היה קורה בדוח מתאמות הפגישות).
+const SIDE_KEY = 'dash.side';
+const narrow = () => window.matchMedia('(max-width:1100px)').matches;
+function sidePref() {
+  try { const v = localStorage.getItem(SIDE_KEY); return v === 'hidden' ? 'rail' : (v || 'open'); } catch (_) { return 'open'; }
+}
+function setRail(on, persist) {
+  document.body.classList.toggle('side-rail', !!on);
+  if (persist) { try { localStorage.setItem(SIDE_KEY, on ? 'rail' : 'open'); } catch (_) {} }
+  const b = document.querySelector('.side-collapse');
+  if (b) {
+    const t = on ? 'הרחבת התפריט' : 'צמצום התפריט';
+    b.setAttribute('aria-expanded', String(!on)); b.setAttribute('aria-label', t); b.title = t;
+  }
+}
+function syncSide() { setRail(narrow() ? true : sidePref() === 'rail', false); }
+window.addEventListener('resize', () => { syncSide(); hideTip(); });
+
+let TIP = null;
+function hideTip() { if (TIP) { TIP.remove(); TIP = null; } }
+function railNow() { return document.body.classList.contains('side-rail') && !document.body.classList.contains('side-open'); }
+function showTip(el, text) {
+  hideTip();
+  TIP = document.createElement('div'); TIP.className = 'side-tip'; TIP.textContent = text;
+  document.body.appendChild(TIP);
+  const r = el.getBoundingClientRect(), t = TIP.getBoundingClientRect();
+  const rtl = getComputedStyle(document.documentElement).direction !== 'ltr';
+  TIP.style.top = Math.max(8, Math.min(r.top + (r.height - t.height) / 2, innerHeight - t.height - 8)) + 'px';
+  TIP.style.left = (rtl ? Math.max(8, r.left - t.width - 10) : Math.min(innerWidth - t.width - 8, r.right + 10)) + 'px';
+  requestAnimationFrame(() => { if (TIP) TIP.classList.add('on'); });
+}
+function bindRailTips(root) {
+  root.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-title]');
+    if (el && railNow()) showTip(el, el.dataset.title);
+  });
+  root.addEventListener('mouseout', e => { if (e.target.closest('[data-title]')) hideTip(); });
+  root.addEventListener('focusin', e => { const el = e.target.closest('[data-title]'); if (el && railNow()) showTip(el, el.dataset.title); });
+  root.addEventListener('focusout', hideTip);
+  window.addEventListener('scroll', hideTip, { passive: true });
 }
 
 // --- באנר עליון -------------------------------------------------------------------
@@ -158,10 +208,9 @@ function render(a) {
   menu.innerHTML = ico('menu');
   // במסך רחב הכפתור מסתיר/מציג את הסרגל (הבחירה נשמרת); במסך צר הוא פותח מגירה
   menu.addEventListener('click', () => {
-    if (window.matchMedia('(max-width:1100px)').matches) { document.body.classList.toggle('side-open'); return; }
-    const hide = !document.body.classList.contains('side-hidden');
-    document.body.classList.toggle('side-hidden', hide);
-    try { localStorage.setItem('dash.side', hide ? 'hidden' : 'open'); } catch (_) {}
+    hideTip();
+    if (narrow()) { document.body.classList.toggle('side-open'); return; }
+    setRail(!document.body.classList.contains('side-rail'), true);
   });
   header.insertBefore(menu, header.firstChild);
 
@@ -227,7 +276,7 @@ function applyVisibility(a) {
 function paint(a) { render(a); applyVisibility(a); document.dispatchEvent(new CustomEvent('access-ready', { detail: a })); }
 
 // Esc סוגר את סרגל הצד במובייל
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.body.classList.remove('side-open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.body.classList.remove('side-open'); hideTip(); } });
 
 paint(A.access);
 A.loadAccess(true).then(paint).catch(() => {});
