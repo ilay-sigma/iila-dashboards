@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8" />
-<meta name="build" content="20260922201458" />
+<meta name="build" content="20260922204036" />
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("dash.theme")==="dark"?"dark":"light"}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
@@ -155,7 +155,7 @@
 const rest = UI.rest, esc = UI.esc, int = UI.int, one = UI.one, pct = UI.pct, q = UI.q, money = UI.money;
 let FIFTY_TARGET = null;   // יעד צוותי לקביעות 50 ₪ (ניתן לעריכה)
 let MONTH = null, MONTHS = [], ROWS = [], TOT = null, TEAMS = [], TEAM = null, FUT = [], AWARDS = [], ANN_CACHE = null, MY_ROWS = [];
-const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='summary') renderSummary(); if(t==='comp') renderComp(); if(t==='setup') renderSetup(); });
+const tabs = UI.tabs('#tabs', t => { if(t==='annual') renderAnnual(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='summary') renderSummary(); if(t==='setup') renderSetup(); });
 const active = () => ROWS.filter(r => r.block===2 && !r.is_total_row && (TEAM==='all' || r.team===TEAM) && (Number(r.bookings_raw)>0 || Number(r.future_count)>0 || Number(r.fifty_count)>0 || r.rep===UI.label()));
 const sumOf = (rows,k) => rows.reduce((s,r)=>s+Number(r[k]||0),0);
 const SORT = { key: null, dir: null };   // מיון לפי לחיצה על כותרת
@@ -203,7 +203,7 @@ async function load(){
 }
 function renderAll(){
   renderTV(); const t = tabs.current();
-  if(t==='summary') renderSummary(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='annual') renderAnnual(); if(t==='comp') renderComp(); if(t==='setup') renderSetup();
+  if(t==='summary') renderSummary(); if(t==='daily') renderDaily(); if(t==='future') renderFuture(); if(t==='annual') renderAnnual(); if(t==='setup') renderSetup();
   renderMine();
 }
 
@@ -327,7 +327,11 @@ function renderSummary(){
   const tot = { fifty_count:S('fifty_count'), arrivals_raw:arr, closings_raw:cls, leads, close_pct: S('arrivals')?S('closings')/S('arrivals'):null, leads_to_meeting_pct: leads?arr/leads:null, leads_to_deal_pct: leads?cls/leads:null };
   const el = document.getElementById('sumGrid');
   el.querySelector('thead').innerHTML = `<tr><th>ערכים</th>${rows.map(r=>`<th>${esc(r.rep)}</th>`).join('')}<th>סה״כ</th></tr>`;
-  el.querySelector('tbody').innerHTML = SUM_ROWS.map(([k,l,kind,qk])=>`<tr class="${k.startsWith('leads_to')?'rowband':''}"><td>${l} ${q(qk)}</td>${rows.map(r=>`<td class="num">${UI.fmt(r[k],kind)}</td>`).join('')}<td class="num">${UI.fmt(tot[k],kind)}</td></tr>`).join('');
+  // ההגעות מוצגות כ"בפועל ＋ תוספת תחרות = סה״כ"; הפרס לא נכנס לקצב או ליעד
+  const sumArrExtra = sumAwards(AWARDS.filter(a=>rows.some(x=>x.rep===a.staff_label)), 'arrivals');
+  const sumCell = (k, kind, val, rep) => k !== 'arrivals_raw' ? UI.fmt(val, kind)
+    : UI.plusComp(val, rep === null ? sumArrExtra : sumAwards(AWARDS.filter(a=>a.staff_label===rep), 'arrivals'), int);
+  el.querySelector('tbody').innerHTML = SUM_ROWS.map(([k,l,kind,qk])=>`<tr class="${k.startsWith('leads_to')?'rowband':''}"><td>${l} ${q(qk)}</td>${rows.map(r=>`<td class="num">${sumCell(k,kind,r[k],r.rep)}</td>`).join('')}<td class="num">${sumCell(k,kind,tot[k],null)}</td></tr>`).join('');
   document.getElementById('rings').innerHTML = rows.map(r=>`<div class="big-pct" style="padding:8px"><div class="ring" style="--p:${Math.min(100,(Number(r.leads_to_meeting_pct)||0)*100).toFixed(1)};--ring-c:var(--c2);width:110px;height:110px"><b style="font-size:20px">${pct(r.leads_to_meeting_pct,0)}</b></div><div class="lbl">${esc(r.rep)}</div><div class="sb">לעסקה ${pct(r.leads_to_deal_pct,0)} · ${int(r.leads)} לידים</div></div>`).join('') || '<div class="empty">אין נתונים</div>';
   const share = document.getElementById('shareGrid'); const SH=[['bookings_raw','קביעות'],['arrivals_raw','הגעות של ייעוצים'],['closings_raw','עסקאות שנסגרו'],['fifty_count','קביעת 50 ₪']];
   share.querySelector('thead').innerHTML = `<tr><th>ערכים</th>${rows.map(r=>`<th>${esc(r.rep)}</th>`).join('')}<th>סה״כ</th></tr>`;
@@ -402,77 +406,6 @@ function drawAnnualMatrix(){
   document.querySelector('#annMatrix tbody').innerHTML = names.map(n=>{ let sum=0,seen=0; const tds=cols.map(m=>{ const r=byKey.get(n+'|'+m); const v=r?Number(r[key]):null; if(v==null||!isFinite(v)) return '<td class="dash">—</td>'; sum+=v; seen++; const a=0.10+0.55*((v-min)/span); return `<td class="num ${m===MONTH?'selmonth':''}"><span class="cell" style="background:color-mix(in srgb, var(--accent) ${Math.round(a*100)}%, transparent)">${annFmt(v,meta[2])}</span></td>`; }).join('');
     const agg = meta[2]==='pct'?(seen?sum/seen:null):sum; return `<tr class="${n===UI.label()?'me':''}"><td>${esc(n)}</td>${tds}<td class="num" style="font-weight:800">${annFmt(agg,meta[2])}${meta[2]==='pct'?' <span class="dash">(ממוצע)</span>':''}</td></tr>`; }).join('') || '<tr><td class="dash">אין נתונים</td></tr>';
 }
-
-// --------------------------------------------------------------------------- תחרויות
-// מצב התחרות לכל מתאמת: כמה יש לה, כמה חסר, ומי עמדה ביעד
-const COMP_METRIC = { arrivals:['arrivals_raw','הגעות',int], closings:['closings_raw','סגירות',int],
-  bookings:['bookings_raw','קביעות',int], fifty:['fifty_count','אשראי 50 ₪',int],
-  close_pct:['close_pct_raw','אחוז סגירה',v=>pct(v)] };
-function compGoals(c){
-  const g = [[c.goal1_value,c.goal1_label],[c.goal2_value,c.goal2_label],[c.goal3_value,c.goal3_label]].filter(x=>x[0]!=null);
-  if(!g.length) return '';
-  const m = COMP_METRIC[c.metric], fmt = m ? m[2] : int;
-  return `<div class="row" style="padding:6px 18px 2px;gap:8px;flex-wrap:wrap">` +
-    g.map(([v,l],i)=>`<span class="chip lemon">יעד ${i+1}: <b>${fmt(Number(v))}</b>${l?` · ${esc(l)}`:''}</span>`).join('') + `</div>`;
-}
-function compProgress(c){
-  const m = COMP_METRIC[c.metric];
-  const goalsAll = [c.goal1_value,c.goal2_value,c.goal3_value].filter(v=>v!=null).map(Number).sort((a,b)=>a-b);
-  const target = goalsAll.length ? goalsAll[goalsAll.length-1] : Number(c.target_value);
-  if(!m || !isFinite(target) || !target) return '';
-  const [key, label, fmt] = m, me = UI.label();
-  const reps = ROWS.filter(r=>r.block===2 && !r.is_total_row && (c.department==='phone' || r.team===c.department));
-  const list = reps.map(r=>({ rep:r.rep, v:Number(r[key])||0 })).sort((a,b)=>b.v-a.v);
-  if(!list.length) return '';
-  const done = list.filter(x=>x.v>=target).length;
-  return `<div class="info">היעד: <b>${fmt(target)} ${esc(label)}</b> · עמדו ביעד ${int(done)} מתוך ${int(list.length)}</div>` +
-    `<div class="scroll"><table class="mini inner"><thead><tr><th>מתאמת</th><th>${esc(label)}</th><th>התקדמות</th><th>מצב</th></tr></thead><tbody>` +
-    list.map(x=>{ const ok = x.v >= target, gap = Math.max(0, target - x.v);
-      return `<tr class="${x.rep===me?'me':''} ${ok?'':''}"><td>${esc(x.rep)}${x.rep===me?' <span class="chip lemon">אני</span>':''}</td>` +
-        `<td class="num">${fmt(x.v)}</td>` +
-        `<td>${UI.meter(target?x.v/target:0)}</td>` +
-        `<td>${ok?'<span class="chip good">✓ עמדה ביעד</span>':`<span class="chip warn">חסר ${fmt(gap)}</span>`}</td></tr>`; }).join('') +
-    `</tbody></table></div>`;
-}
-async function renderComp(){
-  const [comps, awards] = await Promise.all([rest(`competitions?period_month=eq.${MONTH}&order=created_at.desc`), rest(`competition_awards?period_month=eq.${MONTH}&order=created_at`)]);
-  AWARDS = awards;
-  const mine = UI.isStaff() ? awards.filter(a=>a.staff_label===UI.label()) : awards;
-  const total = sumAwards(mine,'money'), totalArr = sumAwards(mine,'arrivals');
-  document.getElementById('compTiles').innerHTML = [
-    [UI.isStaff()?'הבונוס שלי מתחרויות':'סה"כ בונוסים בתחרויות', UI.bonusHtml(total, {zero:'₪ 0'}), `${comps.length} תחרויות החודש`, 'competition'],
-    ['תוספת הגעות מתחרויות', int(totalArr), totalArr?'נזקפות להגעות בטבלה':'אין תוספות החודש', 'arrivals'],
-    ['זכיות', int(mine.length), UI.isStaff()?'שורות פרס על שמי':'שורות פרס', null],
-  ].map(([k,v,m,qk])=>`<div class="tile"><div class="k">${k} ${qk?q(qk):''}</div><div class="v small">${v}</div><div class="m">${m}</div></div>`).join('');
-  const cd = document.getElementById('cDept'); if(cd && !cd.options.length){ cd.innerHTML = TEAMS.map(t=>`<option value="${esc(t.team_key)}">${esc(t.title)}</option>`).join('') + (UI.isMgr()?`<option value="phone">כל מתאמות הפגישות</option>`:''); }
-  const reps = ROWS.filter(r=>r.block===2&&!r.is_total_row).map(r=>r.rep);
-  document.getElementById('compList').innerHTML = comps.map(c=>{ const aw = awards.filter(a=>a.comp_id===c.comp_id);
-    return `<div class="card"><h2>🏅 ${esc(c.title)} <span class="chip lavender">${esc((TEAMS.find(t=>t.team_key===c.department)||{}).title||c.department)}</span><span class="note">${UI.heb(c.period_month)} · ${esc((c.created_by||'').split('@')[0])}${UI.canWrite()?` · <button class="btn ghost xs" data-delcomp="${c.comp_id}">מחיקת התחרות</button>`:''}</span></h2>` +
-      (c.starts_on||c.ends_on?`<div class="sub" style="padding:0 18px 4px">📅 ${esc(UI.dm(c.starts_on))}–${esc(UI.dm(c.ends_on))}</div>`:'') +
-      (c.rule_text?`<div class="info rule">🎯 <b>מה צריך לעשות:</b> ${esc(c.rule_text)}</div>`:'') +
-      compGoals(c) +
-      (c.notes?`<div class="info">${esc(c.notes)}</div>`:'') +
-      compProgress(c) +
-      `<div class="scroll"><table><thead><tr><th>מתאמת</th><th>הפרס</th><th>הערה</th><th>נוסף ע"י</th>${UI.canWrite()?'<th></th>':''}</tr></thead><tbody>${aw.map(a=>`<tr class="${a.staff_label===UI.label()?'me':''}"><td>${esc(a.staff_label)}</td><td class="num">${awardHtml(a)}</td><td style="white-space:normal">${esc(a.notes||'')}</td><td class="dash">${esc((a.created_by||'').split('@')[0])} · ${UI.time(a.created_at)}</td>${UI.canWrite()?`<td><button class="btn ghost xs" data-delaw="${a.award_id}">הסרה</button></td>`:''}</tr>`).join('') || `<tr><td colspan="5" class="dash">${UI.isStaff()?'אין בונוס על שמך בתחרות הזו':'עדיין אין זכיות'}</td></tr>`}</tbody></table></div>` +
-      (UI.canWrite()?`<form class="add-form awform" data-comp="${c.comp_id}" style="padding:10px 18px"><select name="rep">${reps.map(r=>`<option>${esc(r)}</option>`).join('')}</select><select name="kind" title="סוג הפרס"><option value="money">₪ כסף</option><option value="arrivals">＋ הגעות</option></select><input type="number" name="amount" placeholder="כמה" step="any" required style="width:100px" /><input type="text" name="notes" placeholder="הערת הסבר (מקום, על מה…)" style="min-width:230px" /><button class="btn sm" type="submit">הוספת פרס</button></form>`:'') + `</div>`; }).join('') || '<div class="card"><div class="empty"><span class="big">🏆</span>אין תחרויות החודש</div></div>';
-  document.querySelectorAll('.awform').forEach(f=>f.onsubmit=async e=>{ e.preventDefault(); const fd=new FormData(f); try{ await UI.rpc('add_competition_award',{p_comp_id:Number(f.dataset.comp), p_label:fd.get('rep'), p_amount:Number(fd.get('amount')), p_notes:fd.get('notes')||null, p_kind:fd.get('kind')||'money'}); UI.toast('הפרס נוסף ✓','good'); await renderComp(); renderTV(); }catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); } });
-  document.querySelectorAll('[data-delaw]').forEach(b=>b.onclick=async()=>{ if(!confirm('להסיר את שורת הבונוס?')) return; try{ await UI.rpc('delete_competition_award',{p_award_id:Number(b.dataset.delaw)}); await renderComp(); renderTV(); }catch(err){ UI.toast(err.message,'bad'); } });
-  document.querySelectorAll('[data-delcomp]').forEach(b=>b.onclick=async()=>{ if(!confirm('למחוק את התחרות וכל הבונוסים שלה?')) return; try{ await UI.rpc('delete_competition',{p_comp_id:Number(b.dataset.delcomp)}); await renderComp(); renderTV(); }catch(err){ UI.toast(err.message,'bad'); } });
-}
-document.getElementById('compForm')?.addEventListener('submit', async e=>{ e.preventDefault();
-  const num = id => { const v = document.getElementById(id).value; return v===''?null:Number(v); };
-  const txt = id => document.getElementById(id).value.trim() || null;
-  const mt = document.getElementById('cMetric').value;
-  if(mt && num('cGoal1')==null){ UI.toast('בחרת מדד — צריך לפחות יעד אחד','bad'); return; }
-  try{ await UI.rpc('add_competition',{p_department:document.getElementById('cDept').value, p_month:MONTH,
-    p_title:document.getElementById('cTitle').value, p_notes:document.getElementById('cNotes').value||null,
-    p_rule:document.getElementById('cRule').value||null, p_metric:mt||null,
-    p_starts:document.getElementById('cFrom').value||null, p_ends:document.getElementById('cTo').value||null,
-    p_goal1:num('cGoal1'), p_goal1_label:txt('cGoal1L'), p_goal2:num('cGoal2'), p_goal2_label:txt('cGoal2L'),
-    p_goal3:num('cGoal3'), p_goal3_label:txt('cGoal3L')});
-    ['cTitle','cRule','cGoal1','cGoal1L','cGoal2','cGoal2L','cGoal3','cGoal3L','cNotes'].forEach(id=>document.getElementById(id).value='');
-    UI.toast('התחרות נוספה ✓','good'); await renderComp(); }
-  catch(err){ UI.toast('שמירה נכשלה: '+err.message,'bad'); } });
 
 // --------------------------------------------------------------------------- הגדרות
 async function renderSetup(){
